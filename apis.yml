@@ -1,0 +1,59 @@
+name: anew
+description: >-
+  A stateless "page-in-a-URL" service that encodes a self-contained HTML document into a shareable, immutable URL (HTML
+  → URL) and reads it back (URL → HTML). No account, no hosting; free, deterministic, and unauthenticated. Exposes a
+  REST/HTTP API, a hosted MCP server, an A2A agent, and llms.txt.
+url: https://raw.githubusercontent.com/api-evangelist/anew/refs/heads/main/apis.yml
+created: '2026-09-04'
+modified: '2026-09-04'
+specificationVersion: '0.21'
+tags:
+  - html
+  - webpage
+  - website
+  - url
+  - encode
+  - share
+  - web-publishing
+  - developer-tools
+  - mcp
+  - a2a
+  - ai-agent-tooling
+apis:
+  - name: anew Write/Read API
+    description: >-
+      REST/HTTP API to encode self-contained HTML into shareable URLs (POST /write) and read pages back (GET /{slug}),
+      with OpenAPI 3.1.1 contract. Unauthenticated and free.
+    humanURL: https://anew.page
+    baseURL: https://anew.page
+    tags:
+      - html
+      - webpage
+      - website
+      - url
+      - encode
+      - share
+      - web-publishing
+      - developer-tools
+      - mcp
+      - a2a
+      - ai-agent-tooling
+    properties:
+      - type: OpenAPI
+        url: https://anew.page/openapi.json
+      - type: Documentation
+        url: https://setup.anew.page
+      - type: LLMsTxt
+        url: https://anew.page/llms.txt
+      - type: MCPServer
+        url: https://anew.page/mcp
+      - type: AgentSkill
+        url: https://anew.page/.well-known/agent-card.json
+maintainers:
+  - FN: round
+    url: https://github.com/round/anew.page
+generated:
+  by: apis.io/add
+  model: claude-opus-4-8
+  confidence: 97
+  at: '2026-09-04T03:24:25.685Z'
