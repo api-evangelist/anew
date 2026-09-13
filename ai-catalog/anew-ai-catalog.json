@@ -1,0 +1,60 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "anew",
+    "identifier": "did:web:anew.page",
+    "documentationUrl": "https://anew.page/llms.txt",
+    "logoUrl": "https://anew.page/anew.svg"
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:anew.page:mcp:anew",
+      "displayName": "anew MCP server",
+      "description": "Free webpages: websites that live in the URL. anew_write (HTML → URL) and anew_read (URL → HTML) over streamable HTTP at https://anew.page/mcp, no auth.",
+      "type": "application/mcp-server-card+json",
+      "url": "https://anew.page/.well-known/mcp/server-card.json",
+      "representativeQueries": [
+        "publish this HTML as a shareable link",
+        "turn my HTML page into a URL without hosting it anywhere",
+        "read the HTML source behind an anew.page link",
+        "edit a page I already have an anew.page URL for"
+      ]
+    },
+    {
+      "identifier": "urn:air:anew.page:a2a:anew",
+      "displayName": "anew A2A agent",
+      "description": "Free webpages: websites that live in the URL. A2A 1.0 JSON-RPC at https://anew.page/a2a/v1: send HTML, get the page URL back — or send an anew.page URL, get its HTML.",
+      "type": "application/a2a-agent-card+json",
+      "url": "https://anew.page/.well-known/agent-card.json",
+      "representativeQueries": [
+        "ask another agent to publish this page for me",
+        "make a one-page website from this HTML",
+        "decode an anew.page URL back into its HTML"
+      ]
+    },
+    {
+      "identifier": "urn:air:anew.page:http:write",
+      "displayName": "anew Write API",
+      "description": "Free webpages: websites that live in the URL. POST raw HTML to https://anew.page/write and the 200 body is the finished page URL; GET a page URL with Accept: text/plain for its source.",
+      "type": "application/openapi+json",
+      "url": "https://anew.page/openapi.json",
+      "representativeQueries": [
+        "POST HTML somewhere and get a permanent link back",
+        "create a one-page site with a single curl command",
+        "host a small HTML page for free with no signup"
+      ]
+    },
+    {
+      "identifier": "urn:air:anew.page:skill:anew",
+      "displayName": "anew Agent Skill",
+      "description": "Free webpages: websites that live in the URL. Encode self-contained HTML pages into anew.page URLs, and read the HTML back out of one. Use when a user wants to publish a one-page site or a redirect, or to edit a page they already have a URL for.",
+      "type": "application/ai-skill+md",
+      "url": "https://anew.page/.well-known/agent-skills/anew/SKILL.md",
+      "representativeQueries": [
+        "how do I write anew.page URLs",
+        "teach me to encode an HTML page into a shareable URL",
+        "read an anew.page URL back so I can edit the page"
+      ]
+    }
+  ]
+}
