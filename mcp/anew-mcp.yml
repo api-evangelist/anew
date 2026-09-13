@@ -1,0 +1,146 @@
+generated: '2026-09-04'
+method: probed
+source: https://anew.page/mcp (live tools/list, HTTP 200) + https://anew.page/.well-known/mcp.json + https://anew.page/.well-known/mcp/server-card.json
+status: published
+summary: anew ships a first-party hosted remote MCP server that answers tools/list anonymously over plain
+  HTTP. No OAuth challenge, no session handshake, no client library — a single POST returns the real tool
+  set with full inputSchema and outputSchema. It is the provider's primary agent interface, and the REST
+  API is the fallback rather than the other way round.
+deployment:
+  mode: remote
+  endpoint: https://anew.page/mcp
+  install: null
+  package: null
+  auth: none
+  verified: probed
+  note: Remote only. The GitHub repository publishes plugin/extension manifests for Claude Code, Cursor
+    and the Gemini CLI, but every one of them binds the SAME hosted URL — none installs a local stdio
+    process, and the repository states it "contains no product source". There is nothing to run locally,
+    so this is not a `both`.
+  probe_prior: (never probed)
+  probe: live
+  probe_why: live
+  checked: '2026-09-11'
+  source: claimed-backlog re-probe 2026-09-11
+transport:
+  type: streamable-http
+  endpoint: https://anew.page/mcp
+  protocol_versions:
+  - '2026-07-28'
+  - '2025-11-25'
+  declared_default: '2025-11-25'
+  unsupported_version_response: JSON-RPC -32022
+  origin_validation: /mcp validates the browser Origin header per the MCP specification and answers 403
+    origin_forbidden for an opaque, insecure or non-canonical Origin. Server-side clients send no Origin
+    and are unaffected.
+server_identity:
+  name: page.anew/anew
+  title: anew
+  version: 1.0.0
+  website: https://anew.page
+  repository: https://github.com/round/anew.page
+  registry_schema: https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json
+capabilities:
+  tools: true
+  prompts: true
+  resources: true
+extensions:
+- id: io.modelcontextprotocol/ui
+  mime_types:
+  - text/html;profile=mcp-app
+tool_count: 2
+tools:
+- name: anew_write
+  title: Write a page (HTML → anew.page URL)
+  read_only: true
+  summary: Encode a self-contained HTML document into an anew.page URL and return that URL. Markup and
+    inline CSS go in `html`; raw client-side JavaScript goes in `javascript` and the server inserts it
+    before </body>. Script tags and inline event handlers in `html` are rejected by contract.
+  input_schema:
+    html:
+      type: string
+      required: true
+      description: Self-contained HTML markup and inline CSS only; no script elements or executable JavaScript.
+    javascript:
+      type: string
+      required: false
+      description: Optional raw client-side JavaScript, source only, no script tags.
+  output_schema_fields:
+  - url
+  - bytes
+  - limit
+  ui_resource: ui://anew/page-view
+- name: anew_read
+  title: Read a page
+  read_only: true
+  summary: Pass an anew.page URL, get back the HTML document encoded in it, plus its canonical URL and
+    byte size. Decoding is local and exact, so any anew URL reads without a prior visit or fetch.
+  input_schema:
+    url:
+      type: string
+      required: true
+      description: An anew.page URL or a bare slug. Subdomain, cosmetic-prefix and
+    format:
+      type: string
+      required: false
+      enum:
+      - text
+      - resource
+      default: text
+      description: text is one plain text block; resource is an embedded-resource block with mimeType
+        text/html.
+resource_count: 1
+resources:
+- uri: ui://anew/page-view
+  name: anew-page-view
+  title: anew page view
+  mime_type: text/html;profile=mcp-app
+  audience:
+  - user
+  description: Interactive card rendered after anew_write — the minted URL with a copy button and its
+    size against the share budget. Requests clipboardWrite permission.
+prompt_count: 1
+prompts:
+- name: anew
+  title: Compose an anew.page URL
+  description: Compose content and turn it into a self-contained anew.page URL. Handles fresh single-page
+    sites, meta-refresh redirects, and converting supplied text into a page.
+  arguments:
+  - name: request
+    required: true
+webmcp:
+  present: true
+  detail: Every anew surface ships Permissions-Policy tools=self, so in-page WebMCP tools register on
+    any rendered page as well as the homepage and the editor. On a rendered page the set is anew_read
+    (no arguments — the author HTML this URL encodes), anew_edit, anew_write and anew_open. Opening the
+    editor re-points anew_read/anew_edit at the live session and adds anew_title, anew_icon and anew_link.
+    These share verb names with the hosted server but act on different subjects.
+  source: https://anew.page/agents.json
+client_bindings_note: All bind the same hosted endpoint; none is a local server.
+client_bindings:
+- client: Claude Code
+  manifest: https://github.com/round/anew.page/blob/main/.mcp.json
+  binding: '{"type":"http","url":"https://anew.page/mcp"}'
+  install: claude mcp add --transport http anew https://anew.page/mcp
+- client: Agent Plugins 1.0.0
+  manifest: https://github.com/round/anew.page/blob/main/mcp.json
+  binding: '{"type":"streamable-http","url":"https://anew.page/mcp"}'
+- client: Gemini CLI
+  manifest: https://github.com/round/anew.page/blob/main/gemini-extension.json
+  binding: '{"httpUrl":"https://anew.page/mcp"}'
+  install: gemini extensions install https://github.com/round/anew.page
+- client: Cursor
+  manifest: https://github.com/round/anew.page/tree/main/.cursor-plugin
+- client: MCP registry
+  manifest: https://github.com/round/anew.page/blob/main/server.json
+setup_page: https://setup.anew.page
+evidence:
+- url: https://anew.page/mcp
+  method: POST tools/list
+  status: 200
+  content_type: application/json
+  note: Returned 2 tools with full inputSchema and outputSchema, anonymously, on 2026-09-04.
+- url: https://anew.page/.well-known/mcp.json
+  status: 200
+- url: https://anew.page/.well-known/mcp/server-card.json
+  status: 200

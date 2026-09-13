@@ -1,0 +1,142 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "tools": [
+      {
+        "name": "anew_write",
+        "title": "Write a page (HTML → anew.page URL)",
+        "description": "Put markup and inline CSS in html. For calculations, inputs, buttons, or other interactivity, put raw JavaScript in javascript. Never put <script> tags or inline event handlers in html, and never wrap javascript in <script> tags; the server inserts it before </body>. Encode a self-contained HTML document (or fragment, or plain text) into an anew.page URL and return that URL. Each encoding path is deterministic: the same input through the same path always produces the same URL. Different paths use different Brotli encoders, though, so the same HTML may mint different — equally valid — URLs; compare pages by their decoded HTML, never by slug. Inline all CSS, JS, and images (data: URIs, inline SVG, CSS gradients, or emoji) — the page should render alone forever, and each external reference gambles it on someone else's host staying up. One accepted exception: a webfont is far too large to inline, so a font may load from a durable CDN with a system-stack fallback; do not fight a user who asks for one. The HTML should stay ≤ 160000 UTF-8 bytes and the encoded URL ≤ 4000 bytes — the recommended share-safe budgets, not walls: a page past either still mints, renders and serves, up to the physical ceilings (65000 URL bytes, where the edge severs the request line; 163839 decoded bytes, the server's decode cap), it may just break in some apps — the response says so with a warning. Past a ceiling the endpoint refuses with an actionable error (code url_over_budget or content_too_large). Brotli slugs (the endpoint, or a local brotli mint) put a typical page in a few hundred URL bytes; raw base64 fits only ~2900 HTML bytes share-safe — know which budget you are drafting to, and never cut page content to fit before checking the brotli path. Returns the URL as plain text — return it to the user verbatim. To revise an existing anew page, its URL is its source: read it, edit that HTML, write it again. The new URL is a separate page and the original keeps working. Read it with anew_read first, then call this with the edited HTML.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "html": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Self-contained HTML markup and inline CSS only; no script elements, inline event handlers, or executable JavaScript. Encoded into the returned URL."
+            },
+            "javascript": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Optional raw client-side JavaScript. Populate for any interactive behavior. Source only — no script tags. The server inserts it immediately before </body> (or at the end when there is no body)."
+            }
+          },
+          "required": [
+            "html"
+          ],
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "description": "The anew.page URL — return verbatim."
+            },
+            "bytes": {
+              "type": "integer",
+              "description": "Encoded URL length in bytes."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Unfurl-safe URL threshold (4000); headroom = limit - bytes. Past it the URL still works (hard ceiling 65000), it may just break in some apps."
+            },
+            "decoded_bytes": {
+              "type": "integer",
+              "description": "The submitted HTML in UTF-8 bytes."
+            },
+            "decoded_limit": {
+              "type": "integer",
+              "description": "Recommended decoded-byte budget (160000)."
+            },
+            "warning": {
+              "type": "string",
+              "description": "Present when the page minted past a share-safe budget (URL over the share-safe budget, or content over the recommended byte budget): the URL works and serves, with the stated caveat. Relay it to the user with the URL."
+            }
+          },
+          "required": [
+            "url",
+            "bytes",
+            "limit",
+            "decoded_bytes",
+            "decoded_limit"
+          ],
+          "additionalProperties": false
+        },
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "destructiveHint": false,
+          "openWorldHint": true
+        },
+        "_meta": {
+          "ui": {
+            "resourceUri": "ui://anew/page-view"
+          },
+          "ui/resourceUri": "ui://anew/page-view",
+          "openai/toolInvocation/invoking": "Minting page…",
+          "openai/toolInvocation/invoked": "Page minted"
+        }
+      },
+      {
+        "name": "anew_read",
+        "title": "Read a page (anew.page URL → its HTML source)",
+        "description": "Pass an anew.page URL, get back the HTML document encoded in it, plus its canonical URL and byte size. (Two in-page tools share this name and take no arguments: the editor's reads the document open in the editor, and a rendered page's reads the page being viewed. This one takes a url and reads that page.) To revise an existing anew page, its URL is its source: read it, edit that HTML, write it again. The new URL is a separate page and the original keeps working. Read returns the author's exact bytes — no anew-injected tags, no proxied image srcs — so it re-encodes byte-for-byte. Never re-author from a rendered page, a scraped DOM, or a screenshot: each loses the author's markup, and none is faster than reading the slug. Decoding is local and exact, so any anew URL reads — the page needs no prior visit and no fetch.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "minLength": 1,
+              "description": "An anew.page URL, or a bare slug. Subdomain, cosmetic-prefix and #hash forms all resolve."
+            },
+            "format": {
+              "type": "string",
+              "enum": [
+                "text",
+                "resource"
+              ],
+              "default": "text",
+              "description": "How the document rides back. \"text\" (default) is one plain text block. \"resource\" is one embedded-resource block ({type:\"resource\"}, mimeType text/html) — the typed MCP form for callers that want the page tagged as HTML rather than loose text. Same bytes both ways."
+            }
+          },
+          "required": [
+            "url"
+          ],
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "description": "Canonical anew.page URL for this document."
+            },
+            "bytes": {
+              "type": "integer",
+              "description": "Encoded URL length in bytes."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Unfurl-safe URL threshold (4000); headroom = limit - bytes. Past it the URL still works (hard ceiling 65000), it may just break in some apps."
+            }
+          },
+          "required": [
+            "url",
+            "bytes",
+            "limit"
+          ],
+          "additionalProperties": false
+        },
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        }
+      }
+    ]
+  }
+}

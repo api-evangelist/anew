@@ -1,0 +1,103 @@
+generated: '2026-09-04'
+method: derived
+source: mcp/anew-mcp-tools-list.json (live tools/list) + openapi/anew-openapi.json + a2a/anew-agent-card.json
+summary: >-
+  A rare clean case: MCP, A2A and REST are three projections of exactly the same two verbs, and every
+  tool binds to a real published operationId. There are no MCP-only tools and no orphan REST operations
+  in the product surface — the two REST operations that carry no tool are the JSON-RPC transports that
+  host the tools themselves, which is a self-reference rather than a gap.
+
+surfaces:
+  openapi:
+    path: openapi/anew-openapi.json
+    url: https://anew.page/openapi.json
+    gated: false
+    operation_count: 4
+  mcp:
+    url: https://anew.page/mcp
+    gated: false
+    introspected: true
+    note: tools/list answered 200 anonymously on 2026-09-04, so tool inputSchemas here are the real ones.
+    tool_count: 2
+  a2a:
+    url: https://anew.page/a2a/v1
+    card: https://anew.page/.well-known/agent-card.json
+    gated: false
+    skill_count: 2
+  graphql:
+    present: false
+    probed:
+      url: https://anew.page/graphql
+      status: 404
+  webmcp:
+    url: https://anew.page
+    note: >-
+      In-page tools registered via Permissions-Policy tools=self. Not crosswalked to REST because they
+      act on browser session state (the page you are viewing, the open editor document) rather than on a
+      server resource. anew_edit, anew_open, anew_title, anew_icon and anew_link have no REST equivalent
+      by design.
+
+crosswalk:
+  - tool: anew_write
+    surface: mcp
+    category: pages
+    rest: [writePage]
+    a2a_skill: write
+    binding: direct
+    confidence: high
+    note: >-
+      One-to-one with POST /write. The tool's inputSchema is a superset of the REST request body: `html`
+      is the REST body, and `javascript` is an MCP-only convenience the server splices in before </body>
+      before encoding. A REST caller achieves the same result by inlining the script themselves.
+  - tool: anew_read
+    surface: mcp
+    category: pages
+    rest: [readPage]
+    a2a_skill: read
+    binding: direct
+    confidence: high
+    note: >-
+      One-to-one with GET /{slug} using Accept text/plain. The tool's `format` parameter (text |
+      resource) is an MCP transport concern — the same bytes, tagged as an embedded resource rather than
+      loose text — and has no REST analogue; REST expresses the equivalent choice through Accept.
+
+mcp_only: []
+
+rest_only:
+  - operationId: mcpRpc
+    path: POST /mcp
+    reason: >-
+      This is the MCP transport itself, not a product capability. It hosts anew_write and anew_read
+      rather than being wrapped by a tool.
+  - operationId: a2aRpc
+    path: POST /a2a/v1
+    reason: >-
+      This is the A2A transport itself. It hosts the write and read skills rather than being wrapped by
+      a tool.
+
+representation_only_rest:
+  note: >-
+    Not separate operations, but capabilities reachable only over REST. An agent restricted to MCP tools
+    cannot get these.
+  items:
+    - GET /{slug}.md — Markdown rendering of a page (lossy; never re-encode it)
+    - GET /{slug}.png — 1200x630 screenshot of the rendered page
+    - HEAD /{slug} — cheap existence check returning Content-Location, no body, no render
+    - GET /{slug} with Accept text/html — the rendered page, as distinct from its source
+
+coverage:
+  mcp_tools: 2
+  a2a_skills: 2
+  rest_operations: 4
+  rest_product_operations: 2
+  rest_transport_operations: 2
+  tools_bound_to_rest: 2
+  tools_bound_pct: 100
+  product_operations_with_a_tool: 2
+  product_operations_covered_pct: 100
+  mcp_only_tools: 0
+  parity: full
+  parity_note: >-
+    Every product capability is reachable from all three surfaces. The only asymmetries are
+    representation-level (REST alternate renderings) and convenience-level (the MCP `javascript`
+    parameter), not capability-level.
