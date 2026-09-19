@@ -9,7 +9,7 @@ specificationVersion: '0.21'
 tags:
   - HTML
   - webpage
-  - Website
+  - Websites
   - URLs
   - encode
   - Share
@@ -26,7 +26,7 @@ tags:
   - stateless
   - Immutable
   - No Auth
-  - Static Site
+  - Static Sites
   - url-encoding
 tags_raw:
   - html
@@ -57,6 +57,8 @@ apis:
   humanURL: https://anew.page
   baseURL: https://anew.page
   tags:
+  - A2A
+  tags_raw:
   - a2a
   properties:
   - type: OpenAPI
@@ -87,6 +89,8 @@ apis:
   humanURL: https://anew.page
   baseURL: https://anew.page
   tags:
+  - MCP
+  tags_raw:
   - mcp
   properties:
   - type: OpenAPI
@@ -117,6 +121,8 @@ apis:
   humanURL: https://anew.page
   baseURL: https://anew.page
   tags:
+  - Pages
+  tags_raw:
   - pages
   properties:
   - type: OpenAPI
