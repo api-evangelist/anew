@@ -1,0 +1,77 @@
+generated: '2026-09-04'
+method: derived
+source: openapi/anew-openapi.json (components.schemas + operation request/response bodies)
+summary: >-
+  anew has no persistent entities, so there is no entity-relationship graph in the usual sense. The
+  interesting structure is that the identifier IS the payload: a Page has no server-side record, and its
+  URL is a lossless encoding of its HTML rather than a key pointing at stored bytes. Everything else in
+  the schema set is a message envelope.
+persistence: none
+entity_count: 1
+identifier_scheme: content-addressed
+entities:
+  - name: Page
+    stored: false
+    identifier: slug
+    identifier_detail: >-
+      Brotli of the HTML, base64url-encoded, with a comma inserted after every 300 characters. The raw
+      fallback is base64url of the plain UTF-8 bytes with the same chunking. Decoding strips the commas.
+    id_prefix: null
+    fields:
+      - name: html
+        type: string
+        description: The document itself. Lives in the URL, not on a server.
+      - name: url
+        type: string
+        format: uri
+        description: The canonical anew.page URL — the identifier and the payload at once.
+      - name: url_bytes
+        type: integer
+      - name: decoded_bytes
+        type: integer
+    representations:
+      - accept: text/html
+        detail: rendered page (adds [data-anew] head tags, rewrites absolute img srcs to a signed /img/ proxy)
+      - accept: text/plain
+        detail: the author's exact source bytes — re-encodes byte-for-byte
+      - accept: text/markdown
+        detail: lossy Markdown rendering, converted rather than decoded
+      - suffix: .png
+        detail: 1200x630 screenshot, best-effort, cached publicly
+    relationships:
+      - kind: none
+        detail: >-
+          Pages have no relationships to each other. Editing mints a wholly separate page; there is no
+          parent, successor, revision or version link recorded anywhere. The lineage between an original
+          and its edit exists only in the caller's own records.
+    lifecycle:
+      created_by: writePage
+      mutable: false
+      deletable: false
+      expires: never
+      detail: >-
+        Immutable and undeletable by construction. A minted URL keeps decoding for as long as the decoder
+        exists, and there is no operation that could revoke one.
+message_schemas:
+  - name: WriteResult
+    role: response
+    used_by: [writePage]
+    required: [url, url_bytes, url_limit, decoded_bytes, decoded_limit]
+    optional: [warning]
+  - name: Error
+    role: error-envelope
+    used_by: [writePage, readPage, mcpRpc, a2aRpc]
+    required: [error.code, error.message]
+    optional: [error.hint, error.details]
+  - name: JsonRpcError
+    role: error-envelope
+    used_by: [mcpRpc, a2aRpc]
+  - name: JsonRpcResponse
+    role: response
+    used_by: [mcpRpc, a2aRpc]
+schema_reuse:
+  components_schemas: 4
+  refs_resolved: true
+  note: >-
+    All four schemas are referenced from operations rather than inlined, and Error is shared across all
+    four operations — good reuse for a surface this small.

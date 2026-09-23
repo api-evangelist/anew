@@ -1,0 +1,94 @@
+generated: '2026-09-04'
+method: searched
+source: https://anew.page/llms.txt (Versioning and deprecation section) + openapi/anew-openapi.json (info.description)
+docs: https://anew.page/llms.txt
+summary: >-
+  anew publishes a real, specific deprecation policy with named RFCs and a minimum notice period, which
+  is unusual for a free single-purpose service. It publishes no status page and no changelog.
+
+versioning:
+  http_surface:
+    scheme: unversioned-additive
+    detail: >-
+      /write and the page URLs have carried the same contract since launch. New behaviour arrives as a
+      new negotiated representation (an Accept type) or a new response header — never as a change to an
+      existing one. The provider explicitly advises integrating without a version pin.
+  jsonrpc_surfaces:
+    - endpoint: /a2a/v1
+      scheme: path-versioned
+      current: v1
+    - endpoint: /mcp
+      scheme: protocol-revision-negotiated
+      supported:
+        - '2026-07-28'
+        - '2025-11-25'
+      default_declared: '2025-11-25'
+      unsupported_response: JSON-RPC -32022
+      source: https://anew.page/.well-known/mcp.json
+  error_codes:
+    scheme: append-only
+    detail: A code published in the OpenAPI Error enum is stable; codes are added, never repurposed.
+  spec_version: '1.0.0'
+  openapi_version: 3.1.1
+
+deprecation_policy:
+  published: true
+  url: https://anew.page/llms.txt
+  minimum_notice_days: 90
+  currently_deprecated: none
+  detail: >-
+    "Nothing is deprecated today. When something is, it is announced in this file first, then signalled
+    on the wire for at least 90 days before it stops working."
+  wire_signals:
+    - header: Deprecation
+      standard: RFC 9745
+      carries: the date it became deprecated
+    - header: Sunset
+      standard: RFC 8594
+      carries: the date it stops working, never less than 90 days after the Deprecation date
+    - header: Link
+      rel: deprecation
+      carries: a pointer to the explanation
+  guidance_to_integrators: Integrate without a version pin; watch the Deprecation and Sunset headers.
+
+deprecated_operations: []
+deprecated_operation_count: 0
+spec_deprecated_flags: 0
+
+status_page:
+  published: false
+  probed:
+    - url: https://anew.page/status
+      status: 404
+  note: >-
+    No status page, status subdomain or uptime feed was found. Nothing in llms.txt, the api-catalog
+    linkset, agents.json or the GitHub repository points at one.
+
+changelog:
+  published: false
+  note: >-
+    No dated changelog is published anywhere on the site or in the GitHub repository, and the repository
+    has no releases and no tags. The provider's substitute is the additive-only versioning promise plus
+    llms.txt as the announcement channel of record. Recorded as an honest absence — changelog/ is
+    deliberately not written.
+
+sla:
+  published: false
+  note: >-
+    None. The published terms state the service is provided "as is" without any liability
+    (https://github.com/round/anew.page/blob/main/LICENSE.md).
+
+durability:
+  model: content-addressed-immutable
+  detail: >-
+    A page's bytes live in its URL, not on a server, so a minted URL does not depend on a stored record
+    surviving. Every write is immutable and every edit mints a new URL that leaves the original working.
+    The one server-dependent artifact is the best-effort .png screenshot twin, which is a cache.
+  caveats:
+    - >-
+      Rendered pages rewrite absolute HTTP(S) img srcs to a signed /img/ proxy URL that stops resolving
+      when the signing key rotates. The author's source bytes are unaffected — read with Accept
+      text/plain to get them back exactly.
+    - >-
+      A page linking to a host later flagged by Cloudflare's or Google's threat feeds is refused with 451
+      content_blocked, so serving is contingent on outbound link reputation.

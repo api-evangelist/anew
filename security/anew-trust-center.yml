@@ -1,0 +1,45 @@
+generated: '2026-09-04'
+method: searched
+source: https://anew.page/llms.txt + https://github.com/round/anew.page/blob/main/LICENSE.md + probes of trust/status/compliance paths
+published: false
+summary: >-
+  No trust center, no certifications, and no compliance program. What anew publishes instead is a
+  structural privacy argument: there is no account, no cookie and no profile, a page travels inside its
+  own URL rather than being stored, and nothing is retained — so there is, as the policy puts it,
+  "nothing you would ever need to access or delete".
+trust_center_url: null
+certifications: []
+subprocessors_published: false
+privacy_policy: https://github.com/round/anew.page/blob/main/LICENSE.md
+terms_of_service: https://github.com/round/anew.page/blob/main/LICENSE.md
+data_retention:
+  model: none
+  detail: >-
+    No source HTML and no page record are kept — the URL carries the page. The single exception the
+    provider documents is a best-effort screenshot render cached publicly at the page's .png twin.
+  caveat: >-
+    A consequence worth stating plainly for buyers: because the page rides in the URL, anyone with the
+    URL can decode it. The provider says so directly — anew is explicitly not for content that must stay
+    private.
+abuse_controls:
+  - control: threat-feed link blocking
+    detail: >-
+      A page whose outbound links reach a host currently flagged by Cloudflare's or Google's threat feeds
+      is refused with 451 content_blocked before it renders.
+  - control: rate limiting
+    detail: 300 requests per 60 seconds per client IP across /write, /mcp and /a2a/v1.
+  - control: script handling
+    detail: >-
+      The MCP tool contract rejects script elements and inline event handlers inside `html`, requiring
+      JavaScript to be passed separately so the server controls where it is inserted.
+probed:
+  - url: https://anew.page/status
+    status: 404
+  - url: https://anew.page/terms
+    status: 404
+  - url: https://anew.page/privacy
+    status: 404
+note: >-
+  Recorded as an affirmative absence. For a free, accountless, zero-retention utility this is a
+  defensible posture rather than a gap, but a buyer with a vendor-review checklist will find nothing to
+  put in it.

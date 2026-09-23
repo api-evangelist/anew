@@ -1,0 +1,91 @@
+generated: '2026-09-04'
+method: probed
+source: https://anew.page/.well-known/agent-card.json
+summary: anew publishes a real A2A Agent Card at the canonical well-known path, served with the application/a2a+json media type, backed by a live JSON-RPC endpoint at /a2a/v1. Two declared skills, write and read, matching the MCP tool pair.
+discovery:
+  path: /.well-known/agent-card.json
+  canonical: true
+  host: anew.page
+  legacy_path_probed: /.well-known/agent.json
+  legacy_path_status: 404
+x-evidence:
+  fetched: '2026-09-04'
+  url: https://anew.page/.well-known/agent-card.json
+  http_status: 200
+  content_type: application/a2a+json
+  body_shape: JSON object
+  saved_verbatim: a2a/anew-agent-card.json
+agent:
+  name: anew
+  version: 1.0.0
+  description: Encode a self-contained HTML page into a shareable anew.page URL, or recover the exact HTML from an existing URL.
+  provider_organization: anew
+  provider_url: https://anew.page
+  documentation_url: https://anew.page/llms.txt
+  icon_url: https://anew.page/anew.png
+endpoint:
+  url: https://anew.page/a2a/v1
+  protocol_binding: JSONRPC
+  protocol_version: '1.0'
+  auth: none
+  origin_gated: false
+  note: Unlike /mcp, the A2A endpoint is not Origin-gated, which the provider documents as the browser-friendly route for body-carrying a long URL.
+  probed:
+    url: https://anew.page/a2a/v1
+    status: 200
+    note: A POST without a negotiated version returned HTTP 200 carrying JSON-RPC error -32009 "Version not supported" — a live, correctly-behaving A2A endpoint rather than a 404 or a static file.
+capabilities:
+  streaming: false
+  push_notifications: false
+default_input_modes:
+- text/plain
+- text/html
+default_output_modes:
+- text/plain
+skill_count: 2
+skills:
+- id: write
+  name: Write a page
+  tags:
+  - html
+  - url
+  - encode
+  - share
+  input_modes:
+  - text/plain
+  - text/html
+  output_modes:
+  - text/plain
+- id: read
+  name: Read a page
+  tags:
+  - html
+  - url
+  - decode
+  - source
+  input_modes:
+  - text/plain
+  output_modes:
+  - text/plain
+  selection_rule: Selected when the message carries a `url` DataPart and no `html` DataPart, or when its whole text is one bare anew.page URL. Any other message writes.
+graded_against: A2A 1.0.0
+hard_checks:
+  capabilities_is_object: true
+  skills_is_array: true
+  protocol_version_present: partial
+optional_checks:
+  preferred_transport_present: false
+  default_input_modes_present: true
+  default_output_modes_present: true
+deviations:
+- field: protocolVersion
+  issue: No top-level `protocolVersion` member. The version is declared per-interface instead, as supportedInterfaces[0].protocolVersion = "1.0". A validator keying on the top-level member will not find it.
+  severity: medium
+- field: url / preferredTransport
+  issue: No top-level `url` or `preferredTransport`. The card uses the A2A 1.0 `supportedInterfaces[]` shape, which supersedes the 0.3.x url+preferredTransport pair. This is forward-looking rather than malformed, but it means a 0.3.x-era consumer finds no endpoint on the card.
+  severity: medium
+grade_rationale: 'Graded near-conformant rather than conformant: capabilities is a proper object and skills is a proper array, but there is no top-level protocolVersion, so the strict hard-check set is not cleanly met. It is not graded flavored either — the card is coherently written to the A2A 1.0 supportedInterfaces shape, declares its protocol version inside that structure, and is backed by an endpoint that really answers A2A JSON-RPC. The deviation is a shape-migration artifact, not an invented dialect.'
+card:
+  file: a2a/anew-agent-card.json
+conformance:
+  grade: near-conformant

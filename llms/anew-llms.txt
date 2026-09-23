@@ -1,0 +1,149 @@
+# anew
+
+> Encode a self-contained HTML document into an anew.page URL. Every write is immutable, and every edit creates a new URL that leaves the original untouched. Two verbs: **write** (HTML → URL) and **read** (URL → HTML).
+
+To write a page, use the first path available:
+
+1. **Connected tool:** call `anew_write` with the HTML and return its URL verbatim.
+2. **HTTP:** `curl -sS -X POST https://anew.page/write -H 'Content-Type: text/html' --data-binary @page.html`. A 200 response body is the complete shareable URL; return it verbatim. Add `-D /dev/stderr` to also read the measurement headers — `Anew-URL-Bytes` and `Anew-Decoded-Bytes` against their share-safe budgets, plus `Anew-Share-Warning` when the page minted past one (still valid and served; links may break over the budget in some apps — relay the warning with the URL) — which is how you learn a page's real size without doing any arithmetic; keep them off stdout so the body you return stays exactly the URL. Send `Accept: application/json` instead and the same 200 answers `{ "url", "url_bytes", "url_limit", "decoded_bytes", "decoded_limit", "warning"? }` — one parse for the URL, both measurements and the caveat, no header reading. Plain text stays the default: a request that does not name `application/json` above `text/plain` gets the bare URL exactly as before. Works cross-origin from browser JS: every /write response — success and error — carries Access-Control-Allow-Origin: *, OPTIONS preflight is answered, and the request Content-Type is never inspected, so a POST with a safelisted type like text/plain needs no preflight at all. The measurement headers on a 200 are named in Access-Control-Expose-Headers, so response.headers.get('Anew-URL-Bytes') works from a foreign origin too.
+3. **Local mint (no POST):** If no working write tool is available and your environment cannot issue or reach HTTP POST (sandbox egress proxies that refuse POST or CONNECT are a common cause), do not stop: mint the URL locally. (A 400 or 413 response is a page error to fix, not a transport failure.) A slug is brotli of the HTML, base64url-encoded, then chunked with a comma after every 300 characters — a runtime with brotli (node:zlib ships it; Python needs the brotli package) mints at quality 11 with window 24 the same URL /write returns (the window is part of the stream header, so omitting it mints a different — still perfectly valid — URL), and a typical page lands in a few hundred bytes. Only without brotli fall back to raw: base64url-encode the plain UTF-8 bytes of HTML containing at least one complete opening tag (standard base64, replace + with -, / with _, remove trailing =, then the same comma every 300 characters) — uncompressed, that fits only ~2900 bytes of HTML share-safe. The finished URL must be ≤ 65000 bytes — the edge severs longer request lines — so measure it, and cut the HTML if it is over that wall; ≤ 4000 bytes is the recommended share-safe budget, and a URL between the two is fully valid — it renders and serves — it may just break in some apps. Either string is the path after https://anew.page/ — a supported page URL, not a data: URL or a base64 /write body. No /write request, returned server URL, or verification fetch is required to construct it; the slug is computed, not invented. Opening it later is a normal GET. Use the exact recipe below.
+
+Send an anew URL, get its HTML back: `anew_read` over MCP, or `GET` the page with `Accept: text/plain`. Three rules decide whether a page is valid:
+
+- **Self-contained.** Inline all CSS, JS, and images (data: URIs, inline SVG, CSS gradients, or emoji) — the page should render alone forever, and each external reference gambles it on someone else's host staying up. One accepted exception: a webfont is far too large to inline, so a font may load from a durable CDN with a system-stack fallback; do not fight a user who asks for one.
+- **Size.** The HTML should stay ≤ 160000 UTF-8 bytes and the encoded URL ≤ 4000 bytes — the recommended share-safe budgets, not walls: a page past either still mints, renders and serves, up to the physical ceilings (65000 URL bytes, where the edge severs the request line; 163839 decoded bytes, the server's decode cap), it may just break in some apps — the response says so with a warning. Past a ceiling the endpoint refuses with an actionable error (code url_over_budget or content_too_large). Brotli slugs (the endpoint, or a local brotli mint) put a typical page in a few hundred URL bytes; raw base64 fits only ~2900 HTML bytes share-safe — know which budget you are drafting to, and never cut page content to fit before checking the brotli path.
+- **Measure, don't estimate.** Measure by posting, not by calculating: a write is repeatable, so send the page and read what comes back instead of modelling the encoder. No source HTML and no page record are kept — the URL carries the page — though a successful write also kicks off a best-effort screenshot render that, when it succeeds, is cached publicly at the page's .png twin. A 200 reports the page against both budgets in its Anew-URL-Bytes and Anew-Decoded-Bytes response headers, and carries Anew-Share-Warning when the URL minted past the share-safe budget (valid, serves, may break in some apps); a 413 fires only past the physical ceilings and names the exact overage and the fix for the wall that tripped. Never estimate a compressed size and never pre-cut a page to fit a budget — Brotli is non-linear, so source bytes removed are not URL bytes saved, and pages that look far too big routinely fit.
+
+Deliver the URL exactly as produced, as `[anew.page link](<https://anew.page/SLUG>)` — the angle brackets stop chat clients bending the slug's `-` into a smart dash. Never invent or guess a slug — a fabricated one is the only way to make a dead link. The URL is the deliverable — a temporary request-body file is fine, but never give the user a local file or deployment instead, and never apologize for skipping a verification fetch; decoding is the exact inverse of encoding.
+
+## When to use anew
+
+Reach for anew when the deliverable is a shareable web page and hosting would be overhead:
+
+- Publish a one-page site, report, demo, or prototype straight from a conversation — no account, no deploy step.
+- Mint a redirect page (meta refresh) so a long or ephemeral URL travels as one clean link.
+- Turn supplied text or markup into a styled, linkable page.
+- Hand the user a rendered artifact they can open, share, edit (every edit mints a new URL), or download.
+
+Not the right tool for: multi-page sites, pages that need a server or database, large media (the whole page must fit the URL budget), or content that must stay private — anyone with the URL can decode it.
+
+## Edit an existing page
+
+To revise an existing anew page, its URL is its source: read it, edit that HTML, write it again. The new URL is a separate page and the original keeps working. There is nothing to look up and no state to fetch.
+
+Read returns the author's exact bytes — no anew-injected tags, no proxied image srcs — so it re-encodes byte-for-byte. Never re-author from a rendered page, a scraped DOM, or a screenshot: each loses the author's markup, and none is faster than reading the slug. A plain GET is not the source: it carries anew's [data-anew] head tags and rewrites each absolute HTTP(S) <img src> to a signed /img/… proxy URL that stops resolving when the signing key rotates. Read, edit, write:
+
+```bash
+curl -H 'Accept: text/plain' https://anew.page/SLUG > page.html   # exact source
+# edit page.html
+curl -sS -X POST https://anew.page/write -H 'Content-Type: text/html' --data-binary @page.html   # new URL
+```
+
+## Verify a page (no browser needed)
+
+A 200 from `POST /write` is already proof: the returned URL decodes to the exact HTML you posted — no follow-up fetch is required. To check a URL you minted locally, or to see what a page renders as, the page URL itself answers:
+
+- `HEAD https://anew.page/SLUG` — 200 (with `Content-Location`: the canonical URL) iff the slug decodes; 404 means it does not. No response body; it skips content rendering.
+- `GET` with `Accept: text/plain` — the author's exact bytes; byte-compare against your input for a round-trip proof.
+- `GET https://anew.page/SLUG.md` — a text-readable Markdown rendering of the built page (lossy — never re-encode it). The one representation here that is converted rather than decoded, so it is the one that can fail on its own: a 502 `markdown_failed` means the conversion was down, not that the page is bad. Retry, or read the same URL as HTML or with `Accept: text/plain`.
+- `GET https://anew.page/SLUG.png` — a 1200×630 screenshot of the rendered page. The page's own scripts do run, so this catches a page its JavaScript breaks; what the capture blocks is network egress, so fetch, XHR and external scripts never resolve.
+
+If your fetch tool caps URL length (an anew URL runs up to 65000 bytes), send the URL in a request body instead. From server-side HTTP — any client that sends no `Origin` header — `anew_read` over MCP is one plain POST, no session, no auth, no MCP client:
+
+```bash
+curl -sS -X POST https://anew.page/mcp -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
+  --data '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"anew_read","arguments":{"url":"https://anew.page/SLUG"}}}'
+```
+
+(/mcp validates the `Origin` header per the MCP spec, so browser JS on a foreign origin gets 403 there. From a browser, read the page URL directly — `GET`/`HEAD` and the `Accept: text/plain` source are CORS-open — or body-carry the URL to https://anew.page/a2a/v1 as an A2A message, which is not origin-gated.)
+
+## Interfaces
+
+Two verbs — `anew_write` and `anew_read` — over whichever protocol your runtime speaks:
+
+- [HTTP](https://anew.page/openapi.json): `POST /write`, raw HTML → URL; `GET /SLUG` with `Accept: text/plain`, URL → HTML source (`Accept: text/markdown` gives a lossy Markdown rendering that cannot be re-encoded). The universal path — works from any client; OpenAPI spec at the link.
+- [MCP](https://anew.page/mcp): JSON-RPC 2.0, no auth; one-click setup at https://setup.anew.page.
+- [WebMCP](https://anew.page): in the browser, Every anew surface ships Permissions-Policy tools=self, so the in-page tools register wherever you land — a rendered page as much as the homepage or the editor. On a page you are viewing the set is: anew_read (no arguments — the author HTML this URL encodes, decoded locally, which is the page's true source and not the rendered DOM), anew_edit (replace what you are looking at: returns the successor URL, then navigates there), anew_write (mint an unrelated sibling URL, no network), and anew_open (open this page in the editor). Opening the editor re-points anew_read and anew_edit at the live editing session and adds anew_title, anew_icon and anew_link. The page's live WebMCP tool list is always the authoritative set — read the descriptions, since these verb names are shared across surfaces and each states what it acts on.
+- Browser UI (no WebMCP): on https://anew.page, the editing chrome sits behind a closed shadow root and the page itself inside an iframe, so a reader that walks only the top document's light DOM sees neither. That reader is not stuck: <body> carries one control and one report. #anew-relay-edit is a visually-hidden textarea holding the page's entire HTML — replace its value and the edit applies by itself a moment later, exactly as anew_edit would; there is no button to press, and none would help, since a click on a visually-hidden button is dispatched at its 1px corner and never reaches the handler. #anew-relay-status restates anew_read after every change: title, URL bytes, whether the page still fits the budget, whether anything is unsaved, and the current URL — read it to confirm an edit landed instead of taking a screenshot. Both go empty and inert while a Run preview is executing the page's own scripts. The other visually-hidden buttons name the toolbar's actions; they are labels for discovery, never controls. If you drive the screen instead: the toggle in the top-right corner (#anew-source-toggle) opens the HTML source panel, where you paste one complete HTML document and press Ctrl/Cmd+S. (Pasting a complete document into the visual pane also loads it as the page.) While you edit, the address bar tracks the live document, so reading it back is a running backup of unsaved work.
+- [A2A agent card](https://anew.page/.well-known/agent-card.json): skills `write` and `read` at /a2a/v1.
+- [Agent Skill](https://anew.page/.well-known/agent-skills/anew/SKILL.md): the full how-to for writing pages and reading them back.
+- [Machine index](https://anew.page/.well-known/api-catalog): RFC 9727 linkset tying the interfaces together; richer twin at [agents.json](https://anew.page/agents.json).
+
+## Developer resources
+
+Every reference anew publishes, at its own address. This file is the developer documentation — there is no separate docs site, and the apex serves no prose pages. Policies and support live in the repository:
+
+- [Privacy](https://github.com/round/anew.page/blob/main/LICENSE.md).
+- A page whose outbound links reach a host currently flagged by Cloudflare's or Google's threat feeds is refused with `451` and the error code `content_blocked` before it renders.
+
+Machine-readable:
+
+- [/openapi.json](https://anew.page/openapi.json) — OpenAPI 3.1 description of every HTTP endpoint.
+- [/.well-known/mcp/server-card.json](https://anew.page/.well-known/mcp/server-card.json) and [/.well-known/mcp.json](https://anew.page/.well-known/mcp.json) — MCP server card and discovery manifest.
+- [/.well-known/agent-card.json](https://anew.page/.well-known/agent-card.json) — A2A 1.0 Agent Card.
+- [/.well-known/api-catalog](https://anew.page/.well-known/api-catalog) — RFC 9727 linkset. [/agents.json](https://anew.page/agents.json) and [/agents.txt](https://anew.page/agents.txt) — the same interfaces, indexed for agents.
+- [/.well-known/agent-skills/index.json](https://anew.page/.well-known/agent-skills/index.json) and [/.well-known/agent-skills/anew/SKILL.md](https://anew.page/.well-known/agent-skills/anew/SKILL.md) — the Agent Skill and its index.
+- [/.well-known/ai-catalog.json](https://anew.page/.well-known/ai-catalog.json) — ARD manifest indexing the cards above.
+- [/sitemap.xml](https://anew.page/sitemap.xml) — sitemap.
+- [/AGENTS.md](https://anew.page/AGENTS.md) and [/llms-full.txt](https://anew.page/llms-full.txt) — this file, under the other names it is looked for by. Same bytes, not a fuller or a shorter edition.
+
+**Authentication: none.** Every endpoint is public and unauthenticated — no API key, no OAuth, no bearer token, no signup — which the OpenAPI description states as `security: [{}]`. Do not send credentials; nothing reads them. **Webhooks: none.** Nothing is stored and there are no events, so there is nothing to subscribe to and no callback is ever requested. There is no official CLI: the `node -e` recipes below are the whole command-line story.
+
+## Rate limits
+
+300 requests per 60 seconds per client IP, shared across `/write`, `/mcp` and `/a2a/v1`. Reading a page URL is not rate limited. Every response from those three endpoints carries the policy, so there is nothing to look up:
+
+```
+RateLimit-Policy: "api";q=300;w=60
+```
+
+Over the limit the endpoint answers `429` with `Retry-After: 60`, a `RateLimit` field reporting `r=0`, and the JSON error code `rate_limited`. `Retry-After` and the `t` parameter are the full window — an upper bound on the wait, not a countdown — so waiting that long always clears it. Self-throttle against the policy rather than probing for the wall.
+
+## Versioning and deprecation
+
+The HTTP surface is unversioned and additive: `/write` and the page URLs have had the same contract since launch, and new behaviour arrives as a new negotiated representation (an `Accept` type) or a new response header, never as a change to an existing one. The JSON-RPC surfaces are versioned explicitly — `/a2a/v1` in its path, `/mcp` by protocol revision, declared in its manifest and refused with `-32022` when unsupported. An error `code` published in the OpenAPI `Error` enum is stable: codes are added, never repurposed.
+
+Nothing is deprecated today. When something is, it is announced in this file first, then signalled on the wire for at least **90 days** before it stops working: an RFC 9745 `Deprecation` header with the date it became deprecated, an RFC 8594 `Sunset` header with the date it stops (never less than 90 days later), and a `Link` header with `rel="deprecation"` pointing at the explanation. Integrate against this surface without a version pin; watch those two headers.
+
+## Mint locally (no POST)
+
+Both recipes build the finished URL on your own machine — no `/write` call, no server-issued anything. Both end with the same chunking step: a readability comma follows every 300 characters of the slug — so a slug of exactly 300 characters ends in one; decoding strips them. Prefer the brotli one: it mints the same slug `/write` returns and the compression is what makes room (the encoding has not changed since launch — both forms have always decoded).
+
+```bash
+node -e 'const fs=require("node:fs"),z=require("node:zlib"),b=fs.readFileSync(process.argv[1]);if(b.length>163839)throw Error("content_too_large: page is "+b.length+" bytes decoded, but the server can decode at most 163839; shrink the source.");if(b.length>160000)console.error("warning: page is "+b.length+" bytes decoded — past the recommended 160000-byte budget and near the decode ceiling.");const slug=z.brotliCompressSync(b,{params:{[z.constants.BROTLI_PARAM_QUALITY]:11,[z.constants.BROTLI_PARAM_LGWIN]:24,[z.constants.BROTLI_PARAM_SIZE_HINT]:b.length}}).toString("base64url").replace(/(.{300})/g,"$1,"),url="https://anew.page/"+slug;if(url.length>65000)throw Error("url_over_budget: URL is "+url.length+" bytes, but the edge severs request lines past 65000; simplify the HTML or use /write.");if(url.length>4000)console.error("warning: URI may break over 4000 characters.");console.log(url)' page.html
+```
+
+Without brotli, a small page's URL is raw base64url of its HTML. The input must contain at least one complete HTML tag (wrap plain text in markup such as `<p>…</p>`). Base64url is standard base64 of the UTF-8 bytes, with `+` changed to `-`, `/` changed to `_`, and trailing `=` removed — then the comma every 300 characters, exactly as in the brotli recipe. Uncompressed, ~2900 bytes of HTML is the share-safe drafting budget — draft to it rather than shrinking after the fact. Keep the finished URL ≤ 4000 bytes to be share-safe everywhere; up to the 65000-byte ceiling it still works, it may just break in some apps:
+
+```javascript
+const slug = btoa(String.fromCharCode(...new TextEncoder().encode(html)))
+  .replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"").replace(/(.{300})/g,"$1,");
+const url = `https://anew.page/${slug}`;
+if (url.length > 65000) throw new Error("url_over_budget: Blind-mint URL is over the 65000-byte serve ceiling; simplify the HTML or use /write.");
+if (url.length > 4000) console.warn("URI may break over 4000 characters.");
+```
+
+From an existing `page.html` file with Node.js (this command makes no network request):
+
+```bash
+node -e 'const fs=require("node:fs"),bytes=fs.readFileSync(process.argv[1]),slug=bytes.toString("base64url").replace(/(.{300})/g,"$1,"),url="https://anew.page/"+slug;if(url.length>65000)throw Error("url_over_budget: URL is "+url.length+" bytes, but the edge severs request lines past 65000; simplify the HTML or use /write.");if(url.length>4000)console.error("warning: URI may break over 4000 characters.");console.log(url)' page.html
+```
+
+Test vectors — check your encoder against these before minting anything larger:
+
+**Brotli** (the reference recipe above — node:zlib, quality 11, lgwin 24, size hint = input byte length):
+
+```
+<!doctype html><html><head><title>spec</title></head><body><h1>a new internet starts with anew.page</h1></body></html>
+→ https://anew.page/H3UAqCwOeJPh1V9OgB2v1SBhaG6KZy7LfFw6bIzsTsaUwTnlAvbSBJMLfF9Ed8phoHEQtOh6Pr_RkGjpnfeBa8bKsheJnpcZdwEcaCkH
+```
+
+`POST /write` returns exactly this URL for this HTML — the server runs the same recipe. The input is those 118 bytes and nothing else: write it with `printf '%s'`, because a trailing newline is different input and mints a different URL. **Raw base64url:** `<h1>a new internet starts with anew.page</h1>` → `https://anew.page/PGgxPmEgbmV3IGludGVybmV0IHN0YXJ0cyB3aXRoIGFuZXcucGFnZTwvaDE-`.
+
+A slug is not a fingerprint: the decoder accepts any valid brotli stream, so a different encoder or quality mints a different — equally valid — URL for the same HTML. Byte-exact slug equality is promised only for the reference recipe; verify any other encoder by decoding its own output and byte-comparing with your input — the inverse of the recipe, and it needs no network:
+
+```bash
+node -e 'const z=require("node:zlib");process.stdout.write(z.brotliDecompressSync(Buffer.from(process.argv[1].replaceAll(",",""),"base64url")))' SLUG
+```
+
+(`HEAD` on the URL proves the slug decodes to something; byte-equality needs the local decode above, or a `GET` with `Accept: text/plain`.)

@@ -1,0 +1,39 @@
+generated: '2026-09-04'
+method: searched
+source: 'https://anew.page/llms.txt (the Authentication-none statement) + openapi/anew-openapi.json (security: [{}])'
+docs: https://anew.page/llms.txt
+summary: >-
+  anew publishes no authentication of any kind. Every endpoint is public and unauthenticated — no API
+  key, no OAuth, no bearer token, no signup, no account. The OpenAPI states this positively rather than
+  by omission: a top-level `security: [{}]` and an empty `components.securitySchemes`. The docs restate
+  it as an instruction to callers: "Do not send credentials; nothing reads them."
+auth_required: false
+security_schemes: []
+schemes_declared_in_spec: 0
+spec_security: '[{}]'
+notes:
+  - >-
+    `security: [{}]` is the explicit OpenAPI 3.1 idiom for "this operation may be called with no
+    security". It is materially different from a spec that simply omits `security`, which is ambiguous.
+    anew declares the absence deliberately.
+  - >-
+    There is no account system, so there is no signup, login, key rotation, key prefix, or scope surface.
+    scopes/ is therefore not applicable and is deliberately absent from this repo.
+  - >-
+    The only request-shaping controls are transport-level, not identity-level: /mcp validates the browser
+    `Origin` header per the MCP specification and answers 403 `origin_forbidden` for an opaque, insecure
+    or non-canonical Origin. /write and /a2a/v1 are not Origin-gated and answer CORS `*`.
+  - >-
+    anew serves an RFC 9421 HTTP Message Signatures directory at
+    /.well-known/http-message-signatures-directory carrying one Ed25519 signing key. This is a key for
+    verifying signatures anew produces, not a caller authentication requirement.
+access_control:
+  cors:
+    allow_origin: '*'
+    allow_methods: [POST, OPTIONS]
+    expose_headers: [Anew-URL-Bytes, Anew-URL-Limit, Anew-Decoded-Bytes, Anew-Decoded-Limit, Anew-Share-Warning, RateLimit-Policy]
+    max_age: 86400
+    observed: '2026-09-04 on POST https://anew.page/write (HTTP 200)'
+  origin_gated_endpoints:
+    - endpoint: https://anew.page/mcp
+      behavior: 403 origin_forbidden for opaque/insecure/non-canonical browser Origin

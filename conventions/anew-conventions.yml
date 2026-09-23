@@ -1,0 +1,159 @@
+generated: '2026-09-04'
+method: searched
+source: 'https://anew.page/llms.txt + openapi/anew-openapi.json + live probe of POST https://anew.page/write on 2026-09-04'
+docs: https://anew.page/llms.txt
+summary: >-
+  anew is a two-verb, stateless, unauthenticated HTTP surface. It keeps no source HTML and no page
+  record — the URL carries the page — so most cross-cutting REST semantics (pagination, expansion,
+  sparse fieldsets, metadata, resource versioning) simply do not apply. What it does define precisely is
+  content negotiation, a measurement-header protocol, a stable error-code vocabulary, and a rate-limit
+  signal. The defining convention is content addressing: the response of a write IS the identifier of
+  the thing written, and it is computed from the bytes.
+
+auth_style:
+  model: none
+  detail: >-
+    Public and unauthenticated on every endpoint; the OpenAPI declares `security: [{}]`. See
+    authentication/anew-authentication.yml.
+
+idempotency:
+  coverage: full
+  mechanism: deterministic-content-addressing
+  header: null
+  scope: null
+  retention: not-applicable
+  verified: probed
+  evidence: >-
+    POST https://anew.page/write with the 118-byte document published as the reference test vector in
+    llms.txt returned exactly the published URL
+    (https://anew.page/H3UAqCwOeJPh1V9OgB2v1SBhaG6KZy7LfFw6bIzsTsaUwTnlAvbSBJMLfF9Ed8phoHEQtOh6Pr_RkGjpnfeBa8bKsheJnpcZdwEcaCkH)
+    on 2026-09-04, HTTP 200.
+  detail: >-
+    There is no Idempotency-Key header, and there is nothing for one to key. Every write is a pure
+    deterministic function of the request body: the same HTML through the same encoding path always
+    mints the same URL, no server-side record is created, and a retry therefore cannot produce a
+    duplicate, a second charge, or a second resource. Replay safety here is a property of the
+    construction rather than a mechanism bolted onto it, and it spans 100% of the surface because the
+    surface is one write verb. Recorded as `full` on that basis, not on a header.
+  caveat: >-
+    Determinism is promised per encoding path, not globally. Different Brotli encoders (the /write
+    endpoint versus a local mint at a different quality or window) mint different — equally valid — URLs
+    for the same HTML. The provider states the rule explicitly: compare pages by their decoded HTML,
+    never by slug. An agent retrying through the SAME path is byte-safe; an agent comparing across paths
+    must not treat slug inequality as content inequality.
+
+reversibility:
+  grade: na
+  detail: >-
+    anew has no destructive or mutable operation, so there is nothing to reverse and no reversal
+    operation exists. A write only ever mints a new URL; it never alters or replaces an existing one.
+    Editing a page is read → edit → write, which yields a separate URL while the original keeps working
+    indefinitely. There is no delete, no expiry, and no server-side record that could be restored or
+    lost. The absence of a cancel/refund/undo verb here is a correct consequence of immutability, not a
+    gap in the contract.
+  write_surfaces:
+    - operation: writePage
+      operationId: writePage
+      destructive: false
+      reversal_operation: null
+      window: null
+      note: >-
+        Creates no server-side state. The only trailing effect is a best-effort screenshot render cached
+        publicly at the page's .png twin, which the provider documents.
+  na_reason: no-destructive-write-surface
+
+dry_run_mode:
+  supported: true
+  detail: >-
+    Not a flag, but a documented offline equivalent: the local-mint recipes in llms.txt build the exact
+    URL /write would return without issuing any request, and the local brotli decode recipe inverts it.
+    A caller can therefore rehearse a write end to end with no network call at all.
+  source: https://anew.page/llms.txt
+
+pagination:
+  style: none
+  detail: No collection endpoints exist; nothing is listed, so there is nothing to page.
+
+field_expansion:
+  supported: false
+metadata:
+  supported: false
+  detail: No stored resources, therefore no user metadata fields.
+
+content_negotiation:
+  primary_convention: true
+  detail: >-
+    Negotiation, not versioning, is how anew adds behaviour. `Vary: Accept` is served on /write and on
+    page reads.
+  write:
+    default: text/plain (the bare URL)
+    alternatives:
+      - accept: application/json
+        returns: WriteResult object (url, url_bytes, url_limit, decoded_bytes, decoded_limit, warning?)
+        note: must be named at a weight at least equal to text/plain
+  read:
+    - accept: text/html
+      returns: the rendered page (carries anew [data-anew] head tags and proxied img srcs — NOT the source)
+    - accept: text/plain
+      returns: the author's exact bytes; re-encodes byte-for-byte
+    - accept: text/markdown
+      returns: lossy Markdown rendering; converted rather than decoded, so it can fail on its own (502 markdown_failed)
+  suffix_representations:
+    - suffix: .md
+      returns: Markdown rendering
+    - suffix: .png
+      returns: 1200x630 screenshot of the rendered page (best-effort, cached publicly)
+
+measurement_headers:
+  detail: >-
+    A 200 from /write reports the page against both budgets in headers, so a caller learns a page's real
+    size without arithmetic. All are named in Access-Control-Expose-Headers, so browser JS on a foreign
+    origin can read them.
+  headers:
+    - name: Anew-URL-Bytes
+      meaning: encoded URL length in bytes
+    - name: Anew-URL-Limit
+      meaning: share-safe URL budget (4000) — a threshold, not a wall
+    - name: Anew-Decoded-Bytes
+      meaning: the HTML as encoded, in UTF-8 bytes
+    - name: Anew-Decoded-Limit
+      meaning: recommended decoded-byte budget (160000)
+    - name: Anew-Share-Warning
+      meaning: present when the URL minted past the share-safe budget (still valid and served)
+  observed: '2026-09-04 — anew-url-bytes: 122, anew-url-limit: 4000, anew-decoded-bytes: 118, anew-decoded-limit: 160000'
+
+budgets_vs_ceilings:
+  detail: >-
+    anew draws an explicit distinction most APIs collapse: a share-safe BUDGET warns on a 200, a
+    physical CEILING refuses with a 413. Agents are instructed never to pre-cut a page to fit a budget,
+    because Brotli is non-linear and source bytes removed are not URL bytes saved.
+  share_safe_budgets:
+    url_bytes: 4000
+    decoded_bytes: 160000
+  physical_ceilings:
+    url_bytes: 65000
+    decoded_bytes: 163839
+    request_body_bytes: 262144
+
+request_id_tracing:
+  supported: false
+  detail: No first-party request-id header is documented. Cloudflare's cf-ray is present on responses but is edge infrastructure, not an anew contract.
+
+versioning:
+  see: lifecycle/anew-lifecycle.yml
+  summary: HTTP surface unversioned and additive; /a2a/v1 path-versioned; /mcp versioned by protocol revision.
+
+error_envelope:
+  format: custom-json
+  rfc9457: false
+  shape: '{ "error": { "code", "message", "hint?", "details?" } }'
+  content_type: application/json
+  detail: >-
+    Not RFC 9457 problem+json — the envelope is a bespoke object and the media type is plain
+    application/json. It is nonetheless machine-switchable: `code` is drawn from a closed enum the
+    OpenAPI publishes, and the provider commits that codes are added and never repurposed.
+  see: errors/anew-problem-types.yml
+
+rate_limit_signaling:
+  see: rate-limits/anew-rate-limits.yml
+  summary: 'RateLimit-Policy: "api";q=300;w=60 on every response from /write, /mcp and /a2a/v1; 429 with Retry-After: 60 on exhaustion.'

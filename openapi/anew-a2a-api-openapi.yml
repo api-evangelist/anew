@@ -1,0 +1,198 @@
+openapi: 3.2.0
+info:
+  title: anew A2a API
+  version: 1.0.0
+  summary: Encode self-contained HTML pages into shareable URLs.
+  description: anew turns a self-contained HTML document into a shareable URL.
+  license:
+    name: ISC
+    identifier: ISC
+servers:
+- url: https://anew.page
+security:
+- {}
+tags:
+- name: a2a
+  description: Agent2Agent (A2A) protocol JSON-RPC endpoint.
+paths:
+  /a2a/v1:
+    post:
+      operationId: a2aRpc
+      tags:
+      - a2a
+      summary: A2A JSON-RPC endpoint
+      description: Accepts A2A 1.0 JSON-RPC methods. SendMessage encodes the message into an anew.page URL — or, when the message carries a `url` DataPart and no `html` DataPart, or is one bare anew.page URL, decodes that page and returns its HTML source — and returns a terminal Task immediately; ListTasks always returns empty; GetTask/CancelTask return TaskNotFound. Streaming and push-notification methods are unsupported. See the Agent Card at /.well-known/agent-card.json for skill metadata.
+      parameters:
+      - name: A2A-Version
+        in: header
+        required: true
+        schema:
+          const: '1.0'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - jsonrpc
+              - id
+              - method
+              properties:
+                jsonrpc:
+                  const: '2.0'
+                id: {}
+                method:
+                  type: string
+                params:
+                  type: object
+      responses:
+        '200':
+          description: 'JSON-RPC response: a result, or an A2A error as the error member (-32009 version not supported, -32601, -32602, and the task errors).'
+          headers:
+            RateLimit-Policy:
+              description: 'The enforced quota, draft-ietf-httpapi-ratelimit-headers-11 form: "api";q=300;w=60 — 300 requests per 60 seconds per client IP, shared across /write, /mcp and /a2a/v1.'
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonRpcResponse'
+        '400':
+          description: 'Malformed request: parse error, batch, or missing id (A2A defines no notifications).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonRpcError'
+        '405':
+          description: 'Wrong method (code method_not_allowed). Carries Allow: POST, OPTIONS.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: Request body over 262144 bytes (code body_too_large).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 'Over the published quota (code rate_limited). Carries Retry-After: 60, RateLimit-Policy, and RateLimit with r=0. Reading a page URL is not rate limited. Policy: https://anew.page/llms.txt'
+          headers:
+            RateLimit-Policy:
+              description: 'The enforced quota, draft-ietf-httpapi-ratelimit-headers-11 form: "api";q=300;w=60 — 300 requests per 60 seconds per client IP, shared across /write, /mcp and /a2a/v1.'
+              schema:
+                type: string
+            Retry-After:
+              description: Seconds to wait — always the full 60-second window, so one wait always clears the refusal.
+              schema:
+                type: integer
+            RateLimit:
+              description: 'draft-ietf-httpapi-ratelimit-headers-11 quota state at the moment of refusal: r=0 (exact) and t = the full window (an upper bound on the wait).'
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    JsonRpcResponse:
+      type: object
+      required:
+      - jsonrpc
+      description: 'A JSON-RPC 2.0 response: exactly one of result or error is present.'
+      properties:
+        jsonrpc:
+          const: '2.0'
+        id: {}
+        result:
+          type: object
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              type: integer
+            message:
+              type: string
+            data:
+              description: Per-error detail — -32022 carries { supported, requested }.
+    JsonRpcError:
+      type: object
+      required:
+      - jsonrpc
+      - error
+      description: 'A JSON-RPC 2.0 error response: parse error -32700, invalid request -32600, method not found -32601, invalid params -32602, header mismatch -32020, unsupported MCP protocol version -32022, A2A version not supported -32009.'
+      properties:
+        jsonrpc:
+          const: '2.0'
+        id: {}
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              type: integer
+            message:
+              type: string
+            data:
+              description: Per-error detail — -32022 carries { supported, requested }.
+    Error:
+      type: object
+      required:
+      - error
+      description: 'The envelope every REST failure answers with: a machine-readable code, a human-readable message, a hint where one helps, details where there is a measurement.'
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              type: string
+              enum:
+              - not_found
+              - method_not_allowed
+              - origin_forbidden
+              - rate_limited
+              - empty_body
+              - invalid_utf8
+              - json_envelope
+              - url_over_budget
+              - content_too_large
+              - body_too_large
+              - markdown_failed
+              - content_blocked
+              description: Which failure this is. Stable across releases; a caller may switch on it exhaustively.
+            message:
+              type: string
+            hint:
+              type: string
+              description: What to do instead.
+            details:
+              type: object
+              description: 'On url_over_budget and content_too_large: both physical ceilings (url_limit = the 65,000-byte request line, decoded_limit = the 163,839-byte decode cap) and the overage against the one that tripped — these fire only past the ceilings, never at the 4,000-byte share-safe budget, which warns on a 200 instead. On body_too_large: the body budget, since the encode never ran and there is no url/decoded measurement to report.'
+              properties:
+                url_bytes:
+                  type: integer
+                url_limit:
+                  type: integer
+                decoded_bytes:
+                  type: integer
+                decoded_limit:
+                  type: integer
+                body_bytes:
+                  type: integer
+                body_limit:
+                  type: integer
+                over:
+                  type: integer
+externalDocs:
+  url: https://anew.page/llms.txt
+  description: 'Developer documentation: authentication, rate limits, versioning and deprecation policy, and every machine-readable resource.'

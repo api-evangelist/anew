@@ -1,0 +1,133 @@
+generated: '2026-09-04'
+method: probed
+source: direct HTTPS probes of each named path on each known host, 2026-09-04
+summary: >-
+  anew serves an unusually deep well-known surface for a service with no accounts: an RFC 9727
+  api-catalog linkset, an A2A agent card, two MCP discovery documents, an Agent Skills discovery index,
+  an AI-resource-discovery catalog, and an RFC 9421 HTTP Message Signatures key directory. It serves no
+  security.txt and no OAuth/OIDC metadata — the latter correctly, since there is no authentication.
+hosts:
+  - host: anew.page
+    documents:
+      - path: /.well-known/api-catalog
+        status: 200
+        file: anew-api-catalog.json
+        content_type: application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"
+        note: RFC 9727 linkset tying /write, /mcp and /a2a/v1 to their service-desc and service-doc documents.
+      - path: /.well-known/agent-card.json
+        status: 200
+        file: ../a2a/anew-agent-card.json
+        content_type: application/a2a+json
+        note: A2A Agent Card. Saved under a2a/ as the canonical location for that artifact type.
+      - path: /.well-known/mcp.json
+        status: 200
+        file: anew-mcp.json
+        content_type: application/json
+        note: MCP discovery manifest with inline tool, resource and capability declarations.
+      - path: /.well-known/mcp/server-card.json
+        status: 200
+        file: anew-mcp-server-card.json
+        content_type: application/json
+        note: MCP server card against the 2025-12-11 registry schema.
+      - path: /.well-known/agent-skills/index.json
+        status: 200
+        file: anew-agent-skills-index.json
+        content_type: application/json
+        note: >-
+          Agent Skills discovery index (schema 0.2.0), advertising one skill with a sha256 digest. The
+          digest was verified to match the served SKILL.md byte-for-byte.
+      - path: /.well-known/ai-catalog.json
+        status: 200
+        file: anew-ai-catalog.json
+        content_type: application/json
+        note: >-
+          AI resource discovery manifest (specVersion 1.0) indexing the MCP server card, agent card,
+          OpenAPI and Agent Skill, each with representative queries. Host identifier is did:web:anew.page.
+      - path: /.well-known/http-message-signatures-directory
+        status: 200
+        file: anew-http-message-signatures-directory.json
+        content_type: application/http-message-signatures-directory+json
+        note: RFC 9421 key directory carrying one Ed25519 signing key (kid 4MftEt4JRByC1cmTd6zwWAVmK_Arnpik1RHVDuGXE_Q).
+      - path: /.well-known/security.txt
+        status: 404
+        file: null
+      - path: /.well-known/openid-configuration
+        status: 404
+        file: null
+      - path: /.well-known/oauth-authorization-server
+        status: 404
+        file: null
+      - path: /.well-known/oauth-protected-resource
+        status: 404
+        file: null
+      - path: /.well-known/ai-plugin.json
+        status: 404
+        file: null
+      - path: /.well-known/agent.json
+        status: 404
+        file: null
+        note: Pre-0.3 A2A path. Correctly absent — the canonical agent-card.json path is served instead.
+      - path: /.well-known/aauth-resource.json
+        status: 404
+        file: null
+  - host: www.anew.page
+    note: 301-redirects every path to the apex. Not an independent surface.
+    documents:
+      - path: /.well-known/agent-card.json
+        status: 301
+        file: null
+      - path: /.well-known/api-catalog
+        status: 301
+        file: null
+      - path: /.well-known/security.txt
+        status: 404
+        file: null
+  - host: setup.anew.page
+    note: >-
+      The one-click MCP setup page. 301-redirects well-known paths to the apex, so it serves no
+      independent discovery documents.
+    documents:
+      - path: /.well-known/agent-card.json
+        status: 301
+        file: null
+      - path: /.well-known/api-catalog
+        status: 301
+        file: null
+      - path: /.well-known/security.txt
+        status: 404
+        file: null
+non_well_known_agent_documents:
+  note: >-
+    Served at the site root rather than under /.well-known/, but part of the same discovery surface.
+    Recorded here for completeness; indexed as artifacts elsewhere in the repo.
+  documents:
+    - path: /llms.txt
+      status: 200
+      artifact: llms/anew-llms.txt
+    - path: /AGENTS.md
+      status: 200
+      note: Byte-identical to /llms.txt.
+    - path: /llms-full.txt
+      status: 200
+      note: Byte-identical to /llms.txt — the provider states it is the same file under the other names it is looked for by, not a fuller edition.
+    - path: /agents.json
+      status: 200
+      note: agents-txt.com schema v1.0 — indexes mcp, a2a, skills and webmcp entries plus the rate limit.
+    - path: /agents.txt
+      status: 200
+    - path: /openapi.json
+      status: 200
+      artifact: openapi/anew-openapi.json
+    - path: /.well-known/agent-skills/anew/SKILL.md
+      status: 200
+      artifact: skills/anew-anew.md
+    - path: /sitemap.xml
+      status: 200
+    - path: /robots.txt
+      status: 200
+      note: Carries Content-Signal directives (contentsignals.org) declaring search=no, ai-train=no, ai-input=yes as the site default, with per-path grants.
+    - path: /apis.json
+      status: 404
+      note: >-
+        Advertised in the original apis.io submission notes but not served. Recorded as a confirmed
+        absence.

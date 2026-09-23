@@ -1,0 +1,79 @@
+generated: '2026-09-04'
+method: probed
+source: https://anew.page/llms.txt (Mint locally / Verify a page sections) + https://setup.anew.page + live verification on 2026-09-04
+summary: >-
+  anew has no separate test environment, and needs none: the production API is free, unauthenticated and
+  side-effect-free, so calling it IS the safe rehearsal. What it publishes in place of a sandbox is
+  better suited to agents anyway — exact deterministic test vectors, an offline mint that builds the same
+  URL with no network, and an offline decode that inverts it.
+test_environment: none
+test_environment_note: >-
+  No test mode, no sandbox host, no test-vs-live key prefixes — because there are no keys and no stored
+  state to protect. A write creates nothing that has to be cleaned up.
+test_credentials: none
+test_credentials_note: The API is unauthenticated; there is nothing to issue.
+
+test_vectors:
+  note: >-
+    Published verbatim by the provider as reference vectors to check an encoder against before minting
+    anything larger. Both were reproduced during this pass.
+  vectors:
+    - name: brotli reference vector
+      recipe: node:zlib brotli, quality 11, lgwin 24, size hint = input byte length, base64url, comma every 300 chars
+      input: '<!doctype html><html><head><title>spec</title></head><body><h1>a new internet starts with anew.page</h1></body></html>'
+      input_bytes: 118
+      expected_url: https://anew.page/H3UAqCwOeJPh1V9OgB2v1SBhaG6KZy7LfFw6bIzsTsaUwTnlAvbSBJMLfF9Ed8phoHEQtOh6Pr_RkGjpnfeBa8bKsheJnpcZdwEcaCkH
+      verified: true
+      verified_on: '2026-09-04'
+      verification_note: >-
+        POST https://anew.page/write with exactly those 118 bytes returned exactly the published URL,
+        HTTP 200, with Anew-URL-Bytes 122 and Anew-Decoded-Bytes 118. The determinism claim holds.
+      caution: >-
+        The input is those 118 bytes and nothing else — write it with printf '%s', because a trailing
+        newline is different input and mints a different URL.
+    - name: raw base64url vector
+      recipe: base64url of the plain UTF-8 bytes, comma every 300 chars
+      input: '<h1>a new internet starts with anew.page</h1>'
+      expected_url: https://anew.page/PGgxPmEgbmV3IGludGVybmV0IHN0YXJ0cyB3aXRoIGFuZXcucGFnZTwvaDE-
+      verified: false
+      verification_note: Not independently exercised during this pass; recorded as published.
+
+offline_rehearsal:
+  supported: true
+  detail: >-
+    The local-mint recipes construct the finished URL on the caller's own machine with no /write call and
+    no server-issued anything, and the local decode recipe inverts it. Together they let an agent
+    rehearse and verify a write with zero network access.
+  mint_recipe_language: node
+  decode_recipe_language: node
+  fallback_reason: >-
+    Published for environments whose egress proxies refuse POST or CONNECT. The provider is careful to
+    say a 400 or 413 is a page error to fix, not a transport failure — so the fallback is not reached for
+    the wrong reason.
+
+verification_paths:
+  note: How to prove a page is good without a browser.
+  paths:
+    - method: HEAD
+      target: https://anew.page/SLUG
+      detail: 200 with a Content-Location header iff the slug decodes; 404 if it does not. No body, skips rendering.
+    - method: GET with Accept text/plain
+      target: https://anew.page/SLUG
+      detail: The author's exact bytes; byte-compare against your input for a round-trip proof.
+    - method: local brotli decode
+      target: the slug
+      detail: The exact inverse of the mint recipe; needs no network.
+    - method: GET
+      target: https://anew.page/SLUG.png
+      detail: >-
+        1200x630 screenshot. The page's own scripts DO run, so this catches a page its JavaScript breaks;
+        what the capture blocks is network egress, so fetch, XHR and external scripts never resolve.
+
+interactive_console:
+  url: https://anew.page
+  detail: >-
+    The homepage is a live editor — compose or paste a complete HTML document, press Ctrl/Cmd+S, and the
+    address bar tracks the live document as a running backup of unsaved work. Functions as the API's
+    console.
+  setup_page: https://setup.anew.page
+  setup_detail: One-click MCP client wiring plus a copyable curl invocation against /mcp.

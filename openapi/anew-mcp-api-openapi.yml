@@ -1,0 +1,227 @@
+openapi: 3.2.0
+info:
+  title: anew MCP API
+  version: 1.0.0
+  summary: Encode self-contained HTML pages into shareable URLs.
+  description: anew turns a self-contained HTML document into a shareable URL.
+  license:
+    name: ISC
+    identifier: ISC
+servers:
+- url: https://anew.page
+security:
+- {}
+tags:
+- name: MCP
+  description: Model Context Protocol JSON-RPC endpoint.
+paths:
+  /mcp:
+    post:
+      operationId: mcpRpc
+      tags:
+      - MCP
+      summary: MCP JSON-RPC endpoint
+      description: 'Accepts MCP methods: initialize, server/discover, tools/list, tools/call, resources/list, resources/read, resources/templates/list, prompts/list, prompts/get, ping. Dual-era: 2025-11-25 initialize-handshake clients and stateless 2026-07-28 clients (version and capabilities in params._meta, mirrored Mcp-* headers) are both served. Tools: anew_write, anew_read.'
+      parameters:
+      - name: MCP-Protocol-Version
+        in: header
+        required: false
+        schema:
+          type: string
+          enum:
+          - '2026-07-28'
+          - '2025-11-25'
+        description: Protocol revision. Omit it and the request is read as handshake-era; 2026-07-28 requires it, matching params._meta["io.modelcontextprotocol/protocolVersion"].
+      - name: Mcp-Method
+        in: header
+        required: false
+        schema:
+          type: string
+        description: Mirrors the body's method. Required on 2026-07-28 requests.
+      - name: Mcp-Name
+        in: header
+        required: false
+        schema:
+          type: string
+        description: Mirrors params.name (tools/call, prompts/get) or params.uri (resources/read). Required on 2026-07-28 requests for those methods.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - jsonrpc
+              - method
+              properties:
+                jsonrpc:
+                  const: '2.0'
+                id: {}
+                method:
+                  type: string
+                params:
+                  type: object
+      responses:
+        '200':
+          description: JSON-RPC response. Under 2025-11-25 a protocol error (-32601, -32602) is also a 200 carrying the error member; the 2026-07-28 era answers those with 400 and 404.
+          headers:
+            RateLimit-Policy:
+              description: 'The enforced quota, draft-ietf-httpapi-ratelimit-headers-11 form: "api";q=300;w=60 — 300 requests per 60 seconds per client IP, shared across /write, /mcp and /a2a/v1.'
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonRpcResponse'
+        '202':
+          description: Notification accepted (no body).
+        '400':
+          description: Parse error (-32700), batch or malformed envelope (-32600), header/body mismatch (-32020), unsupported protocol version (-32022), or invalid params (-32602).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonRpcError'
+        '403':
+          description: 'A browser Origin that is opaque, insecure, or non-canonical (code origin_forbidden): any canonically serialized https origin is accepted; loopback deployments accept only loopback origins. Clients that send no Origin are never refused.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: A method the 2026-07-28 revision does not define (-32601).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonRpcError'
+        '405':
+          description: 'Wrong method (code method_not_allowed). Carries Allow: POST, OPTIONS.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: Request body over 262144 bytes (code body_too_large).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 'Over the published quota (code rate_limited). Carries Retry-After: 60, RateLimit-Policy, and RateLimit with r=0. Reading a page URL is not rate limited. Policy: https://anew.page/llms.txt'
+          headers:
+            RateLimit-Policy:
+              description: 'The enforced quota, draft-ietf-httpapi-ratelimit-headers-11 form: "api";q=300;w=60 — 300 requests per 60 seconds per client IP, shared across /write, /mcp and /a2a/v1.'
+              schema:
+                type: string
+            Retry-After:
+              description: Seconds to wait — always the full 60-second window, so one wait always clears the refusal.
+              schema:
+                type: integer
+            RateLimit:
+              description: 'draft-ietf-httpapi-ratelimit-headers-11 quota state at the moment of refusal: r=0 (exact) and t = the full window (an upper bound on the wait).'
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    JsonRpcResponse:
+      type: object
+      required:
+      - jsonrpc
+      description: 'A JSON-RPC 2.0 response: exactly one of result or error is present.'
+      properties:
+        jsonrpc:
+          const: '2.0'
+        id: {}
+        result:
+          type: object
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              type: integer
+            message:
+              type: string
+            data:
+              description: Per-error detail — -32022 carries { supported, requested }.
+    JsonRpcError:
+      type: object
+      required:
+      - jsonrpc
+      - error
+      description: 'A JSON-RPC 2.0 error response: parse error -32700, invalid request -32600, method not found -32601, invalid params -32602, header mismatch -32020, unsupported MCP protocol version -32022, A2A version not supported -32009.'
+      properties:
+        jsonrpc:
+          const: '2.0'
+        id: {}
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              type: integer
+            message:
+              type: string
+            data:
+              description: Per-error detail — -32022 carries { supported, requested }.
+    Error:
+      type: object
+      required:
+      - error
+      description: 'The envelope every REST failure answers with: a machine-readable code, a human-readable message, a hint where one helps, details where there is a measurement.'
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              type: string
+              enum:
+              - not_found
+              - method_not_allowed
+              - origin_forbidden
+              - rate_limited
+              - empty_body
+              - invalid_utf8
+              - json_envelope
+              - url_over_budget
+              - content_too_large
+              - body_too_large
+              - markdown_failed
+              - content_blocked
+              description: Which failure this is. Stable across releases; a caller may switch on it exhaustively.
+            message:
+              type: string
+            hint:
+              type: string
+              description: What to do instead.
+            details:
+              type: object
+              description: 'On url_over_budget and content_too_large: both physical ceilings (url_limit = the 65,000-byte request line, decoded_limit = the 163,839-byte decode cap) and the overage against the one that tripped — these fire only past the ceilings, never at the 4,000-byte share-safe budget, which warns on a 200 instead. On body_too_large: the body budget, since the encode never ran and there is no url/decoded measurement to report.'
+              properties:
+                url_bytes:
+                  type: integer
+                url_limit:
+                  type: integer
+                decoded_bytes:
+                  type: integer
+                decoded_limit:
+                  type: integer
+                body_bytes:
+                  type: integer
+                body_limit:
+                  type: integer
+                over:
+                  type: integer
+externalDocs:
+  url: https://anew.page/llms.txt
+  description: 'Developer documentation: authentication, rate limits, versioning and deprecation policy, and every machine-readable resource.'

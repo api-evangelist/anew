@@ -1,0 +1,59 @@
+generated: '2026-09-04'
+method: probed
+source: https://anew.page/llms.txt (Rate limits section) — confirmed on a live response from POST https://anew.page/write on 2026-09-04
+docs: https://anew.page/llms.txt
+summary: >-
+  One published quota covers the whole write/agent surface, and every response from it carries the
+  policy, so an agent never has to look the number up or discover it by hitting the wall. Reading a page
+  URL is not rate limited at all.
+limit_count: 1
+rate_limits:
+  - name: Shared API quota
+    scope: per-client-IP
+    applies_to:
+      - POST /write
+      - POST /mcp
+      - POST /a2a/v1
+    limit: 300
+    window: 60
+    window_unit: seconds
+    burst: null
+    note: One pooled bucket shared across all three endpoints, not 300 each.
+  - name: Page reads
+    scope: unlimited
+    applies_to:
+      - GET /{slug}
+      - HEAD /{slug}
+    limit: null
+    window: null
+    note: >-
+      Explicitly not rate limited. Decoding is a pure function of the URL, so reads cost no shared
+      resource.
+response_headers:
+  - header: RateLimit-Policy
+    value_observed: '"api";q=300;w=60'
+    on: every response from /write, /mcp and /a2a/v1
+    standard: draft-ietf-httpapi-ratelimit-headers-11
+    probed: '2026-09-04, HTTP 200 from POST https://anew.page/write'
+  - header: RateLimit
+    value_on_exhaustion: reports r=0 with a t parameter
+    on: 429 responses
+    standard: draft-ietf-httpapi-ratelimit-headers-11
+  - header: Retry-After
+    value_on_exhaustion: '60'
+    on: 429 responses
+exhaustion:
+  http_status: 429
+  error_code: rate_limited
+  retry_after_seconds: 60
+  guidance: >-
+    Retry-After and the RateLimit `t` parameter are the FULL window — an upper bound on the wait, not a
+    countdown — so waiting that long always clears it. The provider instructs callers to self-throttle
+    against the published policy rather than probing for the wall.
+size_limits:
+  note: Not rate limits, but the other runtime walls an agent must plan against.
+  request_body_bytes: 262144
+  encoded_url_ceiling_bytes: 65000
+  decoded_html_ceiling_bytes: 163839
+  share_safe_url_budget_bytes: 4000
+  share_safe_decoded_budget_bytes: 160000

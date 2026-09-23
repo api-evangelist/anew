@@ -1,0 +1,134 @@
+generated: '2026-09-04'
+method: derived
+source: openapi/anew-openapi.json (components.schemas.Error enum + per-operation 4xx/5xx responses), enriched from https://anew.page/llms.txt
+docs: https://anew.page/llms.txt
+format: custom-json
+rfc9457: false
+content_type: application/json
+envelope: '{ "error": { "code": string, "message": string, "hint": string?, "details": object? } }'
+summary: >-
+  anew does not use RFC 9457 problem+json, but it publishes something functionally equivalent and, for a
+  small surface, arguably stronger: a closed enum of 12 stable error codes declared in the OpenAPI
+  `Error` schema, with a documented stability promise — codes are added, never repurposed — so a caller
+  may switch on `code` exhaustively. `hint` states what to do instead; `details` carries the measurement
+  when a size wall was hit.
+stability_promise: >-
+  "An error `code` published in the OpenAPI `Error` enum is stable: codes are added, never repurposed."
+  (https://anew.page/llms.txt, Versioning and deprecation)
+code_count: 12
+problem_types:
+  - code: not_found
+    http_status: 404
+    operations: [readPage]
+    title: Slug does not decode to a page
+    detail: The slug is not a valid encoding of any document.
+    remediation: Do not guess or invent slugs. Re-read the URL you were given; a fabricated slug is the only way to make a dead link.
+  - code: method_not_allowed
+    http_status: 405
+    operations: [writePage, mcpRpc, a2aRpc]
+    title: Wrong HTTP method
+    detail: 'Carries an `Allow: POST, OPTIONS` header and a hint stating the full POST contract.'
+    remediation: Use POST.
+  - code: origin_forbidden
+    http_status: 403
+    operations: [mcpRpc]
+    title: Browser Origin rejected
+    detail: >-
+      /mcp validates the browser Origin header per the MCP specification. An opaque, insecure or
+      non-canonical Origin is refused.
+    remediation: >-
+      From browser JS, read the page URL directly (GET/HEAD and Accept text/plain are CORS-open), or
+      body-carry the URL to https://anew.page/a2a/v1, which is not Origin-gated. Server-side clients send
+      no Origin header and are unaffected.
+  - code: rate_limited
+    http_status: 429
+    operations: [writePage, mcpRpc, a2aRpc]
+    title: Over the published quota
+    detail: 'Carries Retry-After: 60, RateLimit-Policy, and a RateLimit field reporting r=0.'
+    remediation: >-
+      Wait the full window. Retry-After and the `t` parameter are the whole window — an upper bound, not
+      a countdown — so waiting that long always clears it. Self-throttle against RateLimit-Policy rather
+      than probing for the wall.
+  - code: empty_body
+    http_status: 400
+    operations: [writePage]
+    title: Nothing to encode
+    detail: The request body was empty.
+    remediation: Send the HTML as the raw request body. Use curl --data-binary, never -d (which strips newlines and corrupts HTML).
+  - code: invalid_utf8
+    http_status: 400
+    operations: [writePage]
+    title: Body is not valid UTF-8
+    remediation: Encode the document as UTF-8 before posting.
+  - code: json_envelope
+    http_status: 400
+    operations: [writePage]
+    title: HTML was wrapped in a JSON envelope
+    detail: 'The body was a JSON wrapper such as { "html": ... } rather than the raw document.'
+    remediation: POST the raw HTML as the body. /write takes the document itself, not a JSON object containing it.
+  - code: url_over_budget
+    http_status: 413
+    operations: [writePage]
+    title: Encoded URL past the physical ceiling
+    detail: >-
+      The encoded URL exceeds 65000 bytes, where the edge severs the request line. Fires ONLY past the
+      ceiling — never at the 4000-byte share-safe budget, which warns on a 200 instead. `details` carries
+      url_bytes, url_limit, decoded_limit and the overage.
+    remediation: Simplify the HTML. Do not pre-cut to fit a budget — Brotli is non-linear, so source bytes removed are not URL bytes saved.
+  - code: content_too_large
+    http_status: 413
+    operations: [writePage]
+    title: Decoded HTML past the decode cap
+    detail: The HTML exceeds the 163839-byte server decode cap. `details` carries both ceilings and the overage.
+    remediation: Shrink the source document below 163839 bytes.
+  - code: body_too_large
+    http_status: 413
+    operations: [writePage, mcpRpc, a2aRpc]
+    title: Request body over 262144 bytes
+    detail: >-
+      The encode never ran, so there is no url/decoded measurement to report; `details` carries the body
+      budget only.
+    remediation: Reduce the request body below 262144 bytes.
+  - code: markdown_failed
+    http_status: 502
+    operations: [readPage]
+    title: Markdown conversion failed
+    detail: >-
+      The page decodes fine — only the .md representation failed. This is the one representation that is
+      converted rather than decoded, so it is the only one that can fail on its own.
+    remediation: Retry, or read the same URL as HTML or with Accept text/plain. A 502 here does not mean the page is bad.
+  - code: content_blocked
+    http_status: 451
+    operations: [readPage]
+    title: Page links to a flagged host
+    detail: >-
+      The page decodes, but it links to a host currently flagged as phishing or malware by Cloudflare's
+      or Google's threat feeds. Refused before it renders.
+    remediation: Remove or replace the outbound link to the flagged host and mint a new page.
+jsonrpc_errors:
+  note: >-
+    /mcp and /a2a/v1 return JSON-RPC errors in the `error` member rather than the REST envelope. Under
+    MCP 2025-11-25 a protocol error is carried on an HTTP 200.
+  codes:
+    - code: -32700
+      meaning: Parse error
+      surface: mcp
+    - code: -32600
+      meaning: Batch or malformed envelope
+      surface: mcp
+    - code: -32601
+      meaning: Method not defined by the negotiated revision
+      surface: mcp, a2a
+    - code: -32602
+      meaning: Invalid params
+      surface: mcp, a2a
+    - code: -32020
+      meaning: Header/body mismatch
+      surface: mcp
+    - code: -32022
+      meaning: Unsupported protocol revision
+      surface: mcp
+    - code: -32009
+      meaning: Version not supported
+      surface: a2a
+      observed: '2026-09-04 — POST https://anew.page/a2a/v1 without a negotiated version returned HTTP 200 with error -32009'

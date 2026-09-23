@@ -1,0 +1,104 @@
+generated: '2026-09-04'
+method: searched
+source: registry.npmjs.org, pypi.org, https://github.com/round/anew.page, https://anew.page/llms.txt
+summary: >-
+  anew publishes NO client SDKs in any package registry, and says so plainly rather than leaving it to be
+  discovered. What it distributes instead is a set of first-party agent-client manifests from one GitHub
+  repository — a Claude Code plugin, a Cursor plugin, a Gemini CLI extension, an Agent Plugins manifest,
+  an MCP registry entry and an Agent Skill — every one of which binds the same hosted endpoint rather
+  than shipping code. The repository states it "contains no product source".
+sdk_count: 0
+official_sdk_count: 0
+registry_package_count: 0
+distribution_model: manifest-only
+notes:
+  - >-
+    There is no npm, PyPI, Maven, NuGet, Go, RubyGems, Packagist or crates.io package. This is a
+    deliberate position for an API whose entire client is one curl: POST raw HTML to /write and read the
+    URL from the response body.
+  - >-
+    The npm package named `anew` is NOT this provider — it is an unrelated React/Redux framework
+    (github.com/abubakir1997/anew, latest 2.8.14, last modified 2022-06-13). Recorded explicitly so a
+    later pass does not adopt it.
+  - >-
+    Because the artifacts below are served from a git repository rather than a registry, there is no
+    metadata endpoint that dates a release, and the repository has no releases and no tags. The version
+    each manifest declares internally is recorded; `published` is null with a note, meaning checked and
+    nothing datable to record.
+  - >-
+    The repository's last push (2026-09-01) is the only available recency signal, and it is recent
+    relative to the API, so there is no abandonment signal here.
+packages:
+  - name: anew (Claude Code plugin)
+    registry: github
+    official: true
+    kind: agent-client-plugin
+    url: https://github.com/round/anew.page/tree/main/.claude-plugin
+    binding: https://anew.page/mcp
+    install: claude mcp add --transport http anew https://anew.page/mcp
+    version: '1.0.0'
+    version_source: plugin.json
+    published: null
+    published_note: No registry; repository has no releases or tags. Repo last pushed 2026-09-01.
+  - name: anew (Cursor plugin)
+    registry: github
+    official: true
+    kind: agent-client-plugin
+    url: https://github.com/round/anew.page/tree/main/.cursor-plugin
+    binding: https://anew.page/mcp
+    version: '1.0.0'
+    version_source: .cursor-plugin/plugin.json
+    published: null
+    published_note: No registry; repository has no releases or tags.
+  - name: anew (Gemini CLI extension)
+    registry: github
+    official: true
+    kind: agent-client-extension
+    url: https://github.com/round/anew.page/blob/main/gemini-extension.json
+    binding: https://anew.page/mcp
+    install: gemini extensions install https://github.com/round/anew.page
+    version: '1.0.0'
+    version_source: gemini-extension.json
+    published: null
+    published_note: No registry; repository has no releases or tags.
+  - name: anew (Agent Plugins 1.0.0 manifest)
+    registry: github
+    official: true
+    kind: agent-plugin-manifest
+    url: https://github.com/round/anew.page/blob/main/plugin.json
+    schema: https://agent-plugins.org/schemas/1.0.0/plugin.schema.json
+    binding: https://anew.page/mcp
+    version: '1.0.0'
+    version_source: plugin.json
+    published: null
+    published_note: No registry; repository has no releases or tags.
+  - name: page.anew/anew (MCP registry entry)
+    registry: mcp-registry
+    official: true
+    kind: mcp-server-entry
+    url: https://github.com/round/anew.page/blob/main/server.json
+    schema: https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json
+    binding: https://anew.page/mcp
+    version: '1.0.0'
+    version_source: server.json
+    published: null
+    published_note: Server card is served live at https://anew.page/.well-known/mcp/server-card.json; no dated registry release.
+  - name: anew (Agent Skill)
+    registry: skills.sh
+    official: true
+    kind: agent-skill
+    url: https://anew.page/.well-known/agent-skills/anew/SKILL.md
+    repo_url: https://github.com/round/anew.page/blob/main/skills/anew/SKILL.md
+    install: npx skills add round/anew.page
+    version: '1.0.0'
+    version_source: SKILL.md frontmatter metadata.version
+    published: null
+    published_note: >-
+      No dated registry release. Integrity IS verifiable — the discovery index publishes
+      sha256:a60b51a2f80cdb199c9be3a7f91426c30eedd3e0697c0e30cb81f1573b2d9740 and the served file matches
+      it exactly (verified 2026-09-04).
+cli:
+  published: false
+  note: >-
+    The provider states directly: "There is no official CLI: the `node -e` recipes below are the whole
+    command-line story." Recorded as an affirmative absence — cli/ is deliberately not written.

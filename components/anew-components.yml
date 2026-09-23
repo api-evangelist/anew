@@ -1,0 +1,73 @@
+generated: '2026-09-04'
+method: searched
+source: https://anew.page/.well-known/mcp.json + https://anew.page/agents.json + https://anew.page/llms.txt
+summary: >-
+  anew ships no traditional embeddable web components — no element library, no loader script, no
+  embedded dashboard. What it does ship, and what belongs in this artifact, are two client-side surfaces
+  that render inside someone else's host application: an MCP UI app returned after a write, and a set of
+  WebMCP tools that register on any anew page a browser loads.
+component_library: false
+loader_script: null
+npm_package: null
+families:
+  - family: MCP UI app
+    kind: mcp-app
+    count: 1
+    components:
+      - uri: ui://anew/page-view
+        name: anew-page-view
+        title: anew page view
+        mime_type: text/html;profile=mcp-app
+        rendered_by: the MCP client, after an anew_write call
+        audience: [user]
+        description: >-
+          Interactive card showing the minted URL with a copy button and its size against the share
+          budget.
+        permissions: [clipboardWrite]
+        prefers_border: true
+        extension: io.modelcontextprotocol/ui
+  - family: WebMCP in-page tools
+    kind: in-page-agent-tools
+    count: 7
+    registration: Permissions-Policy tools=self, shipped on every anew surface including rendered user pages
+    components:
+      - name: anew_read
+        context: rendered page and editor
+        detail: No arguments — returns the author HTML this URL encodes, decoded locally, not the rendered DOM.
+      - name: anew_edit
+        context: rendered page and editor
+        detail: Replaces what you are looking at; returns the successor URL, then navigates there.
+      - name: anew_write
+        context: rendered page
+        detail: Mints an unrelated sibling URL, no network.
+      - name: anew_open
+        context: rendered page
+        detail: Opens this page in the editor.
+      - name: anew_title
+        context: editor only
+      - name: anew_icon
+        context: editor only
+      - name: anew_link
+        context: editor only
+    caveat: >-
+      These verb names are shared across surfaces and each acts on a different subject. The provider is
+      explicit that the page's live WebMCP tool list is the authoritative set and the descriptions must
+      be read.
+  - family: Browser editor accessibility relay
+    kind: dom-affordance
+    count: 2
+    detail: >-
+      For readers that cannot use WebMCP, the editor exposes two light-DOM handles because the chrome
+      sits behind a closed shadow root and the page inside an iframe.
+    components:
+      - id: '#anew-relay-edit'
+        detail: >-
+          A visually-hidden textarea holding the page's entire HTML. Replacing its value applies the edit
+          by itself a moment later. There is no button to press.
+      - id: '#anew-relay-status'
+        detail: >-
+          Restates anew_read after every change — title, URL bytes, budget fit, unsaved state, current
+          URL. Read it to confirm an edit landed instead of taking a screenshot.
+      - id: '#anew-source-toggle'
+        detail: Opens the HTML source panel; paste a complete document and press Ctrl/Cmd+S.
+    note: Both relay elements go empty and inert while a Run preview executes the page's own scripts.

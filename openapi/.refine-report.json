@@ -1,0 +1,24 @@
+{
+  "provider": "anew",
+  "sources": [
+    "_original/anew-openapi.json"
+  ],
+  "outputs": [
+    "anew-a2a-api-openapi.yml",
+    "anew-mcp-api-openapi.yml",
+    "anew-pages-api-openapi.yml"
+  ],
+  "archived": [],
+  "errors": [],
+  "warnings": [],
+  "notes": [
+    "sourced from openapi/_original/ (1 archived document(s)); previously refined output at the top level was skipped rather than re-split",
+    "anew-openapi.json: upgraded openapi 3.1.1 -> OpenAPI 3.2.0",
+    "apis.yml register: already-registered"
+  ],
+  "skipped": [
+    "anew-a2a-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "anew-mcp-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "anew-pages-api-openapi.yml: previously refined output, superseded by openapi/_original/"
+  ]
+}

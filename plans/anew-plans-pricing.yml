@@ -1,0 +1,29 @@
+generated: '2026-09-04'
+method: searched
+source: https://anew.page/llms.txt + https://anew.page/ + probe of https://anew.page/pricing (HTTP 404)
+summary: >-
+  anew publishes no plans, no tiers and no pricing page because the service is free and has no account
+  system. This is a deliberate product position, not an undisclosed enterprise gate: there is no signup,
+  no key, no quota to buy up, and no contact-sales path. The only published limit is the free rate
+  quota, which applies to everyone equally.
+plan_count: 0
+pricing_model: free
+free_tier: true
+requires_account: false
+requires_payment_method: false
+enterprise_contact_only: false
+plans: []
+evidence:
+  - url: https://anew.page/pricing
+    status: 404
+    note: No pricing page exists.
+  - url: https://anew.page/llms.txt
+    status: 200
+    note: >-
+      States "Authentication: none. Every endpoint is public and unauthenticated — no API key, no OAuth,
+      no bearer token, no signup" and documents a single rate limit that is not tiered.
+notes:
+  - >-
+    Recorded as plan_count 0 with pricing_model free — an affirmative finding that the provider charges
+    nothing, which is different from a provider whose prices we could not read.
+  - The applicable usage ceiling is in rate-limits/anew-rate-limits.yml, not a paid plan.

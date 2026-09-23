@@ -1,0 +1,109 @@
+overlay: 1.0.0
+info:
+  title: API Evangelist enrichment overlay for anew
+  version: 1.0.0
+x-provenance:
+  generated: '2026-09-04'
+  method: derived
+  source: openapi/anew-openapi.json + the artifacts derived from it in this repo
+  extends: openapi/anew-openapi.json
+  note: >-
+    Captures API Evangelist's enrichment as an Overlay so the provider's own specification is never
+    mutated. Everything asserted here was fetched, probed or derived — no behaviour is invented. The
+    provider's spec is already unusually complete, so this overlay mostly cross-links artifacts and
+    records what was observed on the wire rather than filling gaps.
+actions:
+  - target: $.info
+    description: Record the enrichment provenance and the observed runtime facts on the document root.
+    update:
+      x-apievangelist-enriched: '2026-09-04'
+      x-apievangelist-artifacts:
+        authentication: authentication/anew-authentication.yml
+        conventions: conventions/anew-conventions.yml
+        errors: errors/anew-problem-types.yml
+        lifecycle: lifecycle/anew-lifecycle.yml
+        rate_limits: rate-limits/anew-rate-limits.yml
+        conformance: conformance/anew-conformance.yml
+        data_model: data-model/anew-data-model.yml
+        mcp: mcp/anew-mcp.yml
+        tool_crosswalk: mcp/anew-tool-crosswalk.yml
+        a2a: a2a/anew-a2a.yml
+        skills: skills/_index.yml
+        well_known: well-known/anew-well-known.yml
+        sandbox: sandbox/anew-sandbox.yml
+        packages: packages/anew-packages.yml
+      x-idempotency:
+        coverage: full
+        mechanism: deterministic-content-addressing
+        verified: probed
+        note: >-
+          Verified 2026-09-04 by reproducing the provider's published reference test vector exactly
+          through POST /write.
+      x-reversibility:
+        grade: na
+        reason: no-destructive-write-surface
+        note: Writes are immutable and create no server-side state; there is nothing to reverse.
+  - target: $.servers[0]
+    description: Confirm the single production host was probed and answers.
+    update:
+      x-probed:
+        date: '2026-09-04'
+        status: 200
+        tls: TLSv1.3
+        hsts_max_age: 15552000
+        dnssec: true
+  - target: $.paths['/write'].post
+    description: Record the live-observed response headers and the replay-safety property.
+    update:
+      x-observed-response-headers:
+        - RateLimit-Policy
+        - Anew-URL-Bytes
+        - Anew-URL-Limit
+        - Anew-Decoded-Bytes
+        - Anew-Decoded-Limit
+        - Access-Control-Allow-Origin
+        - Access-Control-Expose-Headers
+      x-idempotent: true
+      x-idempotency-note: >-
+        Deterministic and side-effect-free. Retrying with identical bytes through the same encoding path
+        returns the identical URL and creates no duplicate resource, because no resource is stored.
+      x-destructive: false
+      x-mcp-tool: anew_write
+      x-a2a-skill: write
+  - target: $.paths['/{slug}'].get
+    description: Cross-link the read operation to its agent-surface equivalents and its alternate renderings.
+    update:
+      x-mcp-tool: anew_read
+      x-a2a-skill: read
+      x-safe: true
+      x-alternate-representations:
+        - suffix: .md
+          note: lossy Markdown rendering; never re-encode it
+        - suffix: .png
+          note: 1200x630 screenshot, best-effort
+        - accept: text/plain
+          note: the author's exact source bytes — the only representation that re-encodes byte-for-byte
+  - target: $.paths['/mcp'].post
+    description: Mark the MCP transport and record that anonymous introspection succeeded.
+    update:
+      x-transport: mcp
+      x-mcp-endpoint: https://anew.page/mcp
+      x-introspection:
+        method: tools/list
+        status: 200
+        anonymous: true
+        date: '2026-09-04'
+        tools: [anew_write, anew_read]
+  - target: $.paths['/a2a/v1'].post
+    description: Mark the A2A transport and link its agent card.
+    update:
+      x-transport: a2a
+      x-agent-card: https://anew.page/.well-known/agent-card.json
+      x-agent-card-grade: near-conformant
+  - target: $.components.schemas.Error
+    description: Link the error envelope to the full derived catalog.
+    update:
+      x-error-catalog: errors/anew-problem-types.yml
+      x-rfc9457: false
+      x-code-count: 12
+      x-code-stability: append-only
