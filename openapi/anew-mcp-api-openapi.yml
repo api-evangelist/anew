@@ -126,17 +126,16 @@ paths:
                 $ref: '#/components/schemas/Error'
 components:
   schemas:
-    JsonRpcResponse:
+    JsonRpcError:
       type: object
       required:
       - jsonrpc
-      description: 'A JSON-RPC 2.0 response: exactly one of result or error is present.'
+      - error
+      description: 'A JSON-RPC 2.0 error response: parse error -32700, invalid request -32600, method not found -32601, invalid params -32602, header mismatch -32020, unsupported MCP protocol version -32022, A2A version not supported -32009.'
       properties:
         jsonrpc:
           const: '2.0'
         id: {}
-        result:
-          type: object
         error:
           type: object
           required:
@@ -149,16 +148,17 @@ components:
               type: string
             data:
               description: Per-error detail — -32022 carries { supported, requested }.
-    JsonRpcError:
+    JsonRpcResponse:
       type: object
       required:
       - jsonrpc
-      - error
-      description: 'A JSON-RPC 2.0 error response: parse error -32700, invalid request -32600, method not found -32601, invalid params -32602, header mismatch -32020, unsupported MCP protocol version -32022, A2A version not supported -32009.'
+      description: 'A JSON-RPC 2.0 response: exactly one of result or error is present.'
       properties:
         jsonrpc:
           const: '2.0'
         id: {}
+        result:
+          type: object
         error:
           type: object
           required:

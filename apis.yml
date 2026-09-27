@@ -55,7 +55,6 @@ apis:
   name: anew A2a API
   description: Agent2Agent (A2A) protocol JSON-RPC endpoint.
   humanURL: https://anew.page
-  baseURL: https://anew.page
   tags:
   - A2A
   tags_raw:
@@ -87,7 +86,6 @@ apis:
   name: anew MCP API
   description: Model Context Protocol JSON-RPC endpoint.
   humanURL: https://anew.page
-  baseURL: https://anew.page
   tags:
   - MCP
   tags_raw:
@@ -119,7 +117,6 @@ apis:
   name: anew Pages API
   description: Write self-contained HTML pages, and read them back.
   humanURL: https://anew.page
-  baseURL: https://anew.page
   tags:
   - Pages
   tags_raw:
@@ -212,3 +209,10 @@ x-enrichment:
   status: enriched
   artifacts_added: 31
   pass: local-v3
+x-a2a:
+  verified: true
+  probed: '2026-09-26'
+  url: "https://anew.page/.well-known/agent-card.json"
+  grade: "flavored"
+  protocol_version: "1.0"
+  control: 404
