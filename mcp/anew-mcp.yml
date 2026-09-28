@@ -70,6 +70,9 @@ tools:
   - bytes
   - limit
   ui_resource: ui://anew/page-view
+  description: Put markup and inline CSS in html. For calculations, inputs, buttons, or other interactivity,
+    put raw JavaScript in javascript. Never put <script> tags or inline event handlers in html, and never
+    wrap javascript in <script> tags; the server
 - name: anew_read
   title: Read a page
   read_only: true
@@ -89,6 +92,9 @@ tools:
       default: text
       description: text is one plain text block; resource is an embedded-resource block with mimeType
         text/html.
+  description: 'Pass an anew.page URL, get back the HTML document encoded in it, plus its canonical URL
+    and byte size. (Two in-page tools share this name and take no arguments: the editor''s reads the document
+    open in the editor, and a rendered page''s reads'
 resource_count: 1
 resources:
 - uri: ui://anew/page-view
@@ -144,3 +150,5 @@ evidence:
   status: 200
 - url: https://anew.page/.well-known/mcp/server-card.json
   status: 200
+descriptions_source: live tools/list (authorship probe or saved capture); filled by backfill-tools-from-authorship.py
+  --descriptions, 2026-09-28
