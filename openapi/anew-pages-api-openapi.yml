@@ -194,35 +194,6 @@ paths:
                 $ref: '#/components/schemas/Error'
 components:
   schemas:
-    WriteResult:
-      type: object
-      required:
-      - url
-      - url_bytes
-      - url_limit
-      - decoded_bytes
-      - decoded_limit
-      description: A successful write, for callers that asked for application/json instead of the bare URL. The same numbers the Anew-* response headers carry.
-      properties:
-        url:
-          type: string
-          format: uri
-          description: The complete shareable anew.page URL. Return it verbatim.
-        url_bytes:
-          type: integer
-          description: Encoded URL length in bytes.
-        url_limit:
-          type: integer
-          description: Unfurl-safe URL threshold (4000); headroom = limit - bytes. A threshold, not a wall — writes past it succeed with a warning, up to the 65000-byte serve ceiling.
-        decoded_bytes:
-          type: integer
-          description: The HTML as encoded, in UTF-8 bytes.
-        decoded_limit:
-          type: integer
-          description: Recommended decoded-byte budget (160000).
-        warning:
-          type: string
-          description: Present when the page minted past a share-safe budget — URL over the share-safe budget (links may break over it in some apps) or content over the recommended byte budget. The URL works and serves either way. Relay it to the user with the URL.
     Error:
       type: object
       required:
@@ -274,6 +245,35 @@ components:
                   type: integer
                 over:
                   type: integer
+    WriteResult:
+      type: object
+      required:
+      - url
+      - url_bytes
+      - url_limit
+      - decoded_bytes
+      - decoded_limit
+      description: A successful write, for callers that asked for application/json instead of the bare URL. The same numbers the Anew-* response headers carry.
+      properties:
+        url:
+          type: string
+          format: uri
+          description: The complete shareable anew.page URL. Return it verbatim.
+        url_bytes:
+          type: integer
+          description: Encoded URL length in bytes.
+        url_limit:
+          type: integer
+          description: Unfurl-safe URL threshold (4000); headroom = limit - bytes. A threshold, not a wall — writes past it succeed with a warning, up to the 65000-byte serve ceiling.
+        decoded_bytes:
+          type: integer
+          description: The HTML as encoded, in UTF-8 bytes.
+        decoded_limit:
+          type: integer
+          description: Recommended decoded-byte budget (160000).
+        warning:
+          type: string
+          description: Present when the page minted past a share-safe budget — URL over the share-safe budget (links may break over it in some apps) or content over the recommended byte budget. The URL works and serves either way. Relay it to the user with the URL.
 externalDocs:
   url: https://anew.page/llms.txt
   description: 'Developer documentation: authentication, rate limits, versioning and deprecation policy, and every machine-readable resource.'

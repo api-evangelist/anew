@@ -97,51 +97,6 @@ paths:
                 $ref: '#/components/schemas/Error'
 components:
   schemas:
-    JsonRpcResponse:
-      type: object
-      required:
-      - jsonrpc
-      description: 'A JSON-RPC 2.0 response: exactly one of result or error is present.'
-      properties:
-        jsonrpc:
-          const: '2.0'
-        id: {}
-        result:
-          type: object
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              type: integer
-            message:
-              type: string
-            data:
-              description: Per-error detail — -32022 carries { supported, requested }.
-    JsonRpcError:
-      type: object
-      required:
-      - jsonrpc
-      - error
-      description: 'A JSON-RPC 2.0 error response: parse error -32700, invalid request -32600, method not found -32601, invalid params -32602, header mismatch -32020, unsupported MCP protocol version -32022, A2A version not supported -32009.'
-      properties:
-        jsonrpc:
-          const: '2.0'
-        id: {}
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              type: integer
-            message:
-              type: string
-            data:
-              description: Per-error detail — -32022 carries { supported, requested }.
     Error:
       type: object
       required:
@@ -193,6 +148,51 @@ components:
                   type: integer
                 over:
                   type: integer
+    JsonRpcError:
+      type: object
+      required:
+      - jsonrpc
+      - error
+      description: 'A JSON-RPC 2.0 error response: parse error -32700, invalid request -32600, method not found -32601, invalid params -32602, header mismatch -32020, unsupported MCP protocol version -32022, A2A version not supported -32009.'
+      properties:
+        jsonrpc:
+          const: '2.0'
+        id: {}
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              type: integer
+            message:
+              type: string
+            data:
+              description: Per-error detail — -32022 carries { supported, requested }.
+    JsonRpcResponse:
+      type: object
+      required:
+      - jsonrpc
+      description: 'A JSON-RPC 2.0 response: exactly one of result or error is present.'
+      properties:
+        jsonrpc:
+          const: '2.0'
+        id: {}
+        result:
+          type: object
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              type: integer
+            message:
+              type: string
+            data:
+              description: Per-error detail — -32022 carries { supported, requested }.
 externalDocs:
   url: https://anew.page/llms.txt
   description: 'Developer documentation: authentication, rate limits, versioning and deprecation policy, and every machine-readable resource.'
