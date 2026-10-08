@@ -148,6 +148,8 @@ maintainers:
   - FN: round
     url: https://github.com/round/anew.page
 common:
+  - type: RateLimits
+    url: rate-limits/anew-rate-limits.yml
   - type: Overlay
     url: overlays/anew-openapi-overlay.yaml
   - type: MCPServer
