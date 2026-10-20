@@ -48,9 +48,23 @@ extensions:
 - id: io.modelcontextprotocol/ui
   mime_types:
   - text/html;profile=mcp-app
-tool_count: 2
+tool_count: 4
 tools:
 - name: anew_write
+  description: 'Publish a web page: encode one self-contained HTML document (or fragment, or plain text)
+    into an anew.page URL and return that URL. Use it when the user asks for a page, a site or a link
+    they can open and share. The page is carried in the URL itself — no account, and no copy of the page
+    is kept — so anyone who has the URL can open it; each call also starts a screenshot of the page, cached
+    publicly for link previews. Put markup and inline CSS in html and any JavaScript in javascript as
+    plain source; the server inserts it before </body>. Inline the page''s CSS, scripts and images so
+    it renders on its own; a webfont may load from a CDN. Each encoding path is deterministic: the same
+    input through the same path always produces the same URL. Different paths use different Brotli encoders,
+    though, so the same HTML may mint different — equally valid — URLs; compare pages by their decoded
+    HTML, never by slug. Limits: a page whose URL would pass 4000 bytes, or whose HTML passes 1048576
+    bytes decoded, is refused with an error that states the size and the overage; apps cut longer links
+    short when they are shared. To revise an existing anew page, its URL is its source: read it, edit
+    that HTML, write it again. The new URL is a separate page and the original keeps working. Read it
+    with anew_read first, then call this with the edited HTML.'
   title: Write a page (HTML → anew.page URL)
   read_only: true
   summary: Encode a self-contained HTML document into an anew.page URL and return that URL. Markup and
@@ -70,10 +84,16 @@ tools:
   - bytes
   - limit
   ui_resource: ui://anew/page-view
-  description: Put markup and inline CSS in html. For calculations, inputs, buttons, or other interactivity,
-    put raw JavaScript in javascript. Never put <script> tags or inline event handlers in html, and never
-    wrap javascript in <script> tags; the server
 - name: anew_read
+  description: 'Pass an anew.page URL, get back the HTML document encoded in it, plus its canonical URL
+    and byte size. (Two in-page tools share this name and take no arguments: the editor''s reads the document
+    open in the editor, and a rendered page''s reads the page being viewed. This one takes a url and reads
+    that page.) To revise an existing anew page, its URL is its source: read it, edit that HTML, write
+    it again. The new URL is a separate page and the original keeps working. Read returns the author''s
+    exact bytes — no anew-injected tags, no proxied image srcs — so it re-encodes byte-for-byte. Never
+    re-author from a rendered page, a scraped DOM, or a screenshot: each loses the author''s markup, and
+    none is faster than reading the slug. Decoding is local and exact, so any anew URL reads — the page
+    needs no prior visit and no fetch.'
   title: Read a page
   read_only: true
   summary: Pass an anew.page URL, get back the HTML document encoded in it, plus its canonical URL and
@@ -92,9 +112,13 @@ tools:
       default: text
       description: text is one plain text block; resource is an embedded-resource block with mimeType
         text/html.
-  description: 'Pass an anew.page URL, get back the HTML document encoded in it, plus its canonical URL
-    and byte size. (Two in-page tools share this name and take no arguments: the editor''s reads the document
-    open in the editor, and a rendered page''s reads'
+- name: anew_page
+  description: 'Open a page in the anew editor beside the chat, so the user can edit it by hand: pass
+    an anew.page URL to open that page, or nothing for a new blank page. The editor reports the page it
+    holds back to the chat after every edit. Call it only when the user asks to open the editor or to
+    edit a page themselves; anew_write and anew_read do everything else.'
+- name: anew_editor
+  description: 'Open anew from the sidebar: the editor, fullscreen, on a new blank page. Takes no arguments.'
 resource_count: 1
 resources:
 - uri: ui://anew/page-view
@@ -177,3 +201,4 @@ tool_quality:
   scored: false
   note: Facts from the saved tools/list capture (mcp_tool_quality.py); recorded, not scored. Checks learned
     from Glimind's agent-readiness audit.
+tools_count: 4
