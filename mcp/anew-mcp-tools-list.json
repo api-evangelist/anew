@@ -1,24 +1,49 @@
 {
-  "jsonrpc": "2.0",
-  "id": 1,
+  "endpoint": "https://anew.page/mcp",
+  "captured": "2026-10-20",
+  "method": "initialize + tools/list (anonymous, no tool called; roadmap#992)",
+  "protocol_version": "2025-11-25",
+  "server_info": {
+    "name": "anew",
+    "version": "1.0.2",
+    "title": "anew",
+    "description": "Free webpages: websites that live in the URL.",
+    "icons": [
+      {
+        "src": "https://anew.page/anew.png",
+        "mimeType": "image/png",
+        "sizes": [
+          "any"
+        ]
+      },
+      {
+        "src": "https://anew.page/anew.svg",
+        "mimeType": "image/svg+xml",
+        "sizes": [
+          "any"
+        ]
+      }
+    ],
+    "websiteUrl": "https://anew.page"
+  },
   "result": {
     "tools": [
       {
         "name": "anew_write",
         "title": "Write a page (HTML → anew.page URL)",
-        "description": "Put markup and inline CSS in html. For calculations, inputs, buttons, or other interactivity, put raw JavaScript in javascript. Never put <script> tags or inline event handlers in html, and never wrap javascript in <script> tags; the server inserts it before </body>. Encode a self-contained HTML document (or fragment, or plain text) into an anew.page URL and return that URL. Each encoding path is deterministic: the same input through the same path always produces the same URL. Different paths use different Brotli encoders, though, so the same HTML may mint different — equally valid — URLs; compare pages by their decoded HTML, never by slug. Inline all CSS, JS, and images (data: URIs, inline SVG, CSS gradients, or emoji) — the page should render alone forever, and each external reference gambles it on someone else's host staying up. One accepted exception: a webfont is far too large to inline, so a font may load from a durable CDN with a system-stack fallback; do not fight a user who asks for one. The HTML should stay ≤ 160000 UTF-8 bytes and the encoded URL ≤ 4000 bytes — the recommended share-safe budgets, not walls: a page past either still mints, renders and serves, up to the physical ceilings (65000 URL bytes, where the edge severs the request line; 163839 decoded bytes, the server's decode cap), it may just break in some apps — the response says so with a warning. Past a ceiling the endpoint refuses with an actionable error (code url_over_budget or content_too_large). Brotli slugs (the endpoint, or a local brotli mint) put a typical page in a few hundred URL bytes; raw base64 fits only ~2900 HTML bytes share-safe — know which budget you are drafting to, and never cut page content to fit before checking the brotli path. Returns the URL as plain text — return it to the user verbatim. To revise an existing anew page, its URL is its source: read it, edit that HTML, write it again. The new URL is a separate page and the original keeps working. Read it with anew_read first, then call this with the edited HTML.",
+        "description": "Publish a web page: encode one self-contained HTML document (or fragment, or plain text) into an anew.page URL and return that URL. Use it when the user asks for a page, a site or a link they can open and share. The page is carried in the URL itself — no account, and no copy of the page is kept — so anyone who has the URL can open it; each call also starts a screenshot of the page, cached publicly for link previews. Put markup and inline CSS in html and any JavaScript in javascript as plain source; the server inserts it before </body>. Inline the page's CSS, scripts and images so it renders on its own; a webfont may load from a CDN. Each encoding path is deterministic: the same input through the same path always produces the same URL. Different paths use different Brotli encoders, though, so the same HTML may mint different — equally valid — URLs; compare pages by their decoded HTML, never by slug. Limits: a page whose URL would pass 4000 bytes, or whose HTML passes 1048576 bytes decoded, is refused with an error that states the size and the overage; apps cut longer links short when they are shared. To revise an existing anew page, its URL is its source: read it, edit that HTML, write it again. The new URL is a separate page and the original keeps working. Read it with anew_read first, then call this with the edited HTML.",
         "inputSchema": {
           "type": "object",
           "properties": {
             "html": {
               "type": "string",
               "minLength": 1,
-              "description": "Self-contained HTML markup and inline CSS only; no script elements, inline event handlers, or executable JavaScript. Encoded into the returned URL."
+              "description": "The page: HTML markup with inline CSS — a full document, a fragment, or plain text. Its JavaScript goes in javascript. Encoded into the returned URL."
             },
             "javascript": {
               "type": "string",
               "minLength": 1,
-              "description": "Optional raw client-side JavaScript. Populate for any interactive behavior. Source only — no script tags. The server inserts it immediately before </body> (or at the end when there is no body)."
+              "description": "Optional client-side JavaScript for the page, as plain source without script tags. The server inserts it immediately before </body> (or at the end when there is no body)."
             }
           },
           "required": [
@@ -32,35 +57,25 @@
             "url": {
               "type": "string",
               "format": "uri",
-              "description": "The anew.page URL — return verbatim."
+              "description": "The anew.page URL of the page."
             },
             "bytes": {
               "type": "integer",
               "description": "Encoded URL length in bytes."
             },
-            "limit": {
-              "type": "integer",
-              "description": "Unfurl-safe URL threshold (4000); headroom = limit - bytes. Past it the URL still works (hard ceiling 65000), it may just break in some apps."
-            },
             "decoded_bytes": {
               "type": "integer",
               "description": "The submitted HTML in UTF-8 bytes."
             },
-            "decoded_limit": {
-              "type": "integer",
-              "description": "Recommended decoded-byte budget (160000)."
-            },
             "warning": {
               "type": "string",
-              "description": "Present when the page minted past a share-safe budget (URL over the share-safe budget, or content over the recommended byte budget): the URL works and serves, with the stated caveat. Relay it to the user with the URL."
+              "description": "Not returned: a page past a size limit is refused with an error instead."
             }
           },
           "required": [
             "url",
             "bytes",
-            "limit",
-            "decoded_bytes",
-            "decoded_limit"
+            "decoded_bytes"
           ],
           "additionalProperties": false
         },
@@ -72,9 +87,9 @@
         },
         "_meta": {
           "ui": {
-            "resourceUri": "ui://anew/page-view"
+            "resourceUri": "ui://anew/page-view/12"
           },
-          "ui/resourceUri": "ui://anew/page-view",
+          "ui/resourceUri": "ui://anew/page-view/12",
           "openai/toolInvocation/invoking": "Minting page…",
           "openai/toolInvocation/invoked": "Page minted"
         }
@@ -117,24 +132,109 @@
             "bytes": {
               "type": "integer",
               "description": "Encoded URL length in bytes."
-            },
-            "limit": {
-              "type": "integer",
-              "description": "Unfurl-safe URL threshold (4000); headroom = limit - bytes. Past it the URL still works (hard ceiling 65000), it may just break in some apps."
             }
           },
           "required": [
             "url",
-            "bytes",
-            "limit"
+            "bytes"
           ],
           "additionalProperties": false
         },
         "annotations": {
-          "readOnlyHint": false,
+          "readOnlyHint": true,
           "idempotentHint": false,
           "destructiveHint": false,
           "openWorldHint": false
+        }
+      },
+      {
+        "name": "anew_page",
+        "title": "anew",
+        "description": "Open a page in the anew editor beside the chat, so the user can edit it by hand: pass an anew.page URL to open that page, or nothing for a new blank page. The editor reports the page it holds back to the chat after every edit. Call it only when the user asks to open the editor or to edit a page themselves; anew_write and anew_read do everything else.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "description": "An anew.page URL or bare slug to open in the editor. Omit it, or leave it empty, for a new blank page."
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "icons": [
+          {
+            "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%228%207.5%2032%2032%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222.13%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22M35%2032L23.0708%2014.565C22.585%2013.855%2022.3421%2013.5%2022%2013.5C21.6579%2013.5%2021.415%2013.855%2020.9292%2014.565L9%2032M22.3421%2032L35%2013.5M14.81%2023.5H40%22%2F%3E%3C%2Fsvg%3E",
+            "mimeType": "image/svg+xml",
+            "sizes": [
+              "20x20"
+            ]
+          }
+        ],
+        "_meta": {
+          "ui": {
+            "resourceUri": "ui://anew/editor/13"
+          },
+          "ui/resourceUri": "ui://anew/editor/13",
+          "openai/ui": {
+            "entrypoints": [
+              {
+                "type": "thread"
+              }
+            ]
+          },
+          "openai/toolInvocation/invoking": "Opening anew…",
+          "openai/toolInvocation/invoked": "anew open"
+        }
+      },
+      {
+        "name": "anew_editor",
+        "title": "anew",
+        "description": "Open anew from the sidebar: the editor, fullscreen, on a new blank page. Takes no arguments.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "icons": [
+          {
+            "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%228%207.5%2032%2032%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222.13%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22M35%2032L23.0708%2014.565C22.585%2013.855%2022.3421%2013.5%2022%2013.5C21.6579%2013.5%2021.415%2013.855%2020.9292%2014.565L9%2032M22.3421%2032L35%2013.5M14.81%2023.5H40%22%2F%3E%3C%2Fsvg%3E",
+            "mimeType": "image/svg+xml",
+            "sizes": [
+              "20x20"
+            ]
+          }
+        ],
+        "_meta": {
+          "ui": {
+            "resourceUri": "ui://anew/editor/13",
+            "visibility": [
+              "app"
+            ]
+          },
+          "ui/resourceUri": "ui://anew/editor/13",
+          "openai/ui": {
+            "entrypoints": [
+              {
+                "type": "global"
+              }
+            ]
+          },
+          "openai/toolInvocation/invoking": "Opening anew…",
+          "openai/toolInvocation/invoked": "anew open"
         }
       }
     ]
