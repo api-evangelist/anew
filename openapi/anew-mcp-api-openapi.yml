@@ -225,3 +225,9 @@ components:
 externalDocs:
   url: https://anew.page/llms.txt
   description: 'Developer documentation: authentication, rate limits, versioning and deprecation policy, and every machine-readable resource.'
+x-provenance:
+  method: harvested
+  publisher: anew
+  source: https://anew.page/openapi.json
+  note: split by refine-openapis from the provider's own published document, verified by fetch (openapi/_original/*.fetch.json);
+    stamped by stamp-openapi-provenance.py (roadmap#793)
