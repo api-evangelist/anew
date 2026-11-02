@@ -1,0 +1,220 @@
+name: anew
+description: A stateless "page-in-a-URL" service that encodes a self-contained HTML document into a shareable, immutable
+  URL (HTML → URL) and reads it back (URL → HTML). No account, no hosting; free, deterministic, and unauthenticated. Exposes
+  a REST/HTTP API, a hosted MCP server, an A2A agent, and llms.txt.
+url: https://raw.githubusercontent.com/api-evangelist/anew/refs/heads/main/apis.yml
+created: '2026-09-04'
+modified: '2026-09-04'
+specificationVersion: '0.21'
+tags:
+  - HTML
+  - Webpage
+  - Websites
+  - URLs
+  - Encode
+  - Share
+  - Web Publishing
+  - Developer Tools
+  - MCP
+  - A2A
+  - AI / Agent Tooling
+  - llms-txt
+  - Agents.txt
+  - Agent Skills
+  - WebMCP
+  - OpenAPI
+  - stateless
+  - Immutable
+  - No Auth
+  - Static Sites
+  - url-encoding
+tags_raw:
+  - html
+  - webpage
+  - website
+  - url
+  - encode
+  - share
+  - web-publishing
+  - developer-tools
+  - mcp
+  - a2a
+  - ai-agent-tooling
+  - llms-txt
+  - agents-txt
+  - agent-skills
+  - webmcp
+  - openapi
+  - stateless
+  - immutable
+  - no-auth
+  - static-site
+  - url-encoding
+apis:
+- aid: anew:anew-a2a-api
+  name: anew A2a API
+  description: Agent2Agent (A2A) protocol JSON-RPC endpoint.
+  humanURL: https://anew.page
+  tags:
+  - A2A
+  tags_raw:
+  - a2a
+  properties:
+  - type: OpenAPI
+    url: openapi/anew-a2a-api-openapi.yml
+  - type: AgentCard
+    url: a2a/anew-a2a.yml
+  - type: Authentication
+    url: authentication/anew-authentication.yml
+  - type: ErrorCatalog
+    url: errors/anew-problem-types.yml
+  - type: RateLimits
+    url: rate-limits/anew-rate-limits.yml
+  - type: Conventions
+    url: conventions/anew-conventions.yml
+  - type: Idempotency
+    url: conventions/anew-conventions.yml
+  - type: DataModel
+    url: data-model/anew-data-model.yml
+  - type: Sandbox
+    url: sandbox/anew-sandbox.yml
+  - type: Documentation
+    url: https://anew.page/llms.txt
+  - type: APIReference
+    url: https://anew.page/openapi.json
+- aid: anew:anew-mcp-api
+  name: anew MCP API
+  description: Model Context Protocol JSON-RPC endpoint.
+  humanURL: https://anew.page
+  tags:
+  - MCP
+  tags_raw:
+  - mcp
+  properties:
+  - type: OpenAPI
+    url: openapi/anew-mcp-api-openapi.yml
+  - type: AgentCard
+    url: a2a/anew-a2a.yml
+  - type: Authentication
+    url: authentication/anew-authentication.yml
+  - type: ErrorCatalog
+    url: errors/anew-problem-types.yml
+  - type: RateLimits
+    url: rate-limits/anew-rate-limits.yml
+  - type: Conventions
+    url: conventions/anew-conventions.yml
+  - type: Idempotency
+    url: conventions/anew-conventions.yml
+  - type: DataModel
+    url: data-model/anew-data-model.yml
+  - type: Sandbox
+    url: sandbox/anew-sandbox.yml
+  - type: Documentation
+    url: https://anew.page/llms.txt
+  - type: APIReference
+    url: https://anew.page/openapi.json
+- aid: anew:anew-pages-api
+  name: anew Pages API
+  description: Write self-contained HTML pages, and read them back.
+  humanURL: https://anew.page
+  tags:
+  - Pages
+  tags_raw:
+  - pages
+  properties:
+  - type: OpenAPI
+    url: openapi/anew-pages-api-openapi.yml
+  - type: AgentCard
+    url: a2a/anew-a2a.yml
+  - type: Authentication
+    url: authentication/anew-authentication.yml
+  - type: ErrorCatalog
+    url: errors/anew-problem-types.yml
+  - type: RateLimits
+    url: rate-limits/anew-rate-limits.yml
+  - type: Conventions
+    url: conventions/anew-conventions.yml
+  - type: Idempotency
+    url: conventions/anew-conventions.yml
+  - type: DataModel
+    url: data-model/anew-data-model.yml
+  - type: Sandbox
+    url: sandbox/anew-sandbox.yml
+  - type: Documentation
+    url: https://anew.page/llms.txt
+  - type: APIReference
+    url: https://anew.page/openapi.json
+maintainers:
+  - FN: round
+    url: https://github.com/round/anew.page
+common:
+  - type: RateLimits
+    url: rate-limits/anew-rate-limits.yml
+  - type: Overlay
+    url: overlays/anew-openapi-overlay.yaml
+  - type: MCPServer
+    url: mcp/anew-mcp.yml
+  - type: Website
+    url: https://www.anew.page/
+  - type: DeveloperPortal
+    url: https://anew.page
+  - type: Documentation
+    url: https://anew.page/llms.txt
+  - type: APIReference
+    url: https://anew.page/openapi.json
+  - type: GettingStarted
+    url: https://setup.anew.page
+  - type: Support
+    url: https://github.com/round/anew.page/issues
+  - type: GitHubOrganization
+    url: https://github.com/round
+  - type: TermsOfService
+    url: https://github.com/round/anew.page/blob/main/LICENSE.md#terms
+  - type: PrivacyPolicy
+    url: https://github.com/round/anew.page/blob/main/LICENSE.md#privacy
+  - type: LLMsTxt
+    url: llms/anew-llms.txt
+  - type: AgentSkill
+    url: skills/_index.yml
+  - type: WellKnown
+    url: well-known/anew-well-known.yml
+  - type: APICatalog
+    url: well-known/anew-api-catalog.json
+  - type: Conformance
+    url: conformance/anew-conformance.yml
+  - type: Lifecycle
+    url: lifecycle/anew-lifecycle.yml
+  - type: Deprecation
+    url: lifecycle/anew-lifecycle.yml
+  - type: Security
+    url: security/anew-vulnerability-disclosure.yml
+  - type: VulnerabilityDisclosure
+    url: security/anew-vulnerability-disclosure.yml
+  - type: DomainSecurity
+    url: security/anew-domain-security.yml
+  - type: Packages
+    url: packages/anew-packages.yml
+  - type: Components
+    url: components/anew-components.yml
+  - type: Plans
+    url: plans/anew-plans-pricing.yml
+  - type: ToolCrosswalk
+    url: mcp/anew-tool-crosswalk.yml
+image: https://anew.page/anew.png
+x-generated:
+  by: apis.io/add
+  model: claude-opus-4-8
+  confidence: 97
+  at: '2026-09-04T03:24:25.685Z'
+x-enrichment:
+  date: '2026-09-04'
+  status: enriched
+  artifacts_added: 31
+  pass: local-v3
+x-a2a:
+  verified: true
+  probed: '2026-09-26'
+  url: "https://anew.page/.well-known/agent-card.json"
+  grade: "flavored"
+  protocol_version: "1.0"
+  control: 404
