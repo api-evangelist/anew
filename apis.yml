@@ -3,6 +3,24 @@ description: A stateless "page-in-a-URL" service that encodes a self-contained H
   URL (HTML → URL) and reads it back (URL → HTML). No account, no hosting; free, deterministic, and unauthenticated. Exposes
   a REST/HTTP API, a hosted MCP server, an A2A agent, and llms.txt.
 url: https://raw.githubusercontent.com/api-evangelist/anew/refs/heads/main/apis.yml
+accessModel:
+  pricing: unknown
+  onboarding: open
+  trial: false
+  try_now: false
+  public: true
+  gated: none
+  gated_source:
+  - onboarding
+  label: Open access
+  confidence: medium
+  source:
+  - authentication
+  - rate-limits
+  - security
+  - sandbox
+  generated: '2026-11-02'
+  method: derived
 created: '2026-09-04'
 modified: '2026-09-04'
 specificationVersion: '0.21'
