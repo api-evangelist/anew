@@ -19,7 +19,7 @@ accessModel:
   - rate-limits
   - security
   - sandbox
-  generated: '2026-11-02'
+  generated: '2026-11-06'
   method: derived
 created: '2026-09-04'
 modified: '2026-09-04'
@@ -36,7 +36,7 @@ tags:
   - MCP
   - A2A
   - AI / Agent Tooling
-  - llms-txt
+  - Llms.txt
   - Agents.txt
   - Agent Skills
   - WebMCP
