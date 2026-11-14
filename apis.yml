@@ -19,7 +19,7 @@ accessModel:
   - rate-limits
   - security
   - sandbox
-  generated: '2026-11-06'
+  generated: '2026-11-13'
   method: derived
 created: '2026-09-04'
 modified: '2026-09-04'
@@ -218,6 +218,14 @@ common:
     url: plans/anew-plans-pricing.yml
   - type: ToolCrosswalk
     url: mcp/anew-tool-crosswalk.yml
+  - type: UsageTerms
+    url: terms/anew-terms-of-service.yml
+  - type: DataProcessing
+    url: privacy/anew-privacy-policy.yml
+  - type: Eligibility
+    url: eligibility/anew-eligibility.yml
+  - type: DataLicense
+    url: data-license/anew-data-license.yml
 image: https://anew.page/anew.png
 x-generated:
   by: apis.io/add
